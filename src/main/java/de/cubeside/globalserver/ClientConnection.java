@@ -86,7 +86,7 @@ public class ClientConnection extends Thread {
 
             while (true) {
                 ClientPacketType packetType = ClientPacketType.valueOf(is.readByte());
-                LOGGER.info("Packet received: " + packetType);
+                LOGGER.info("Packet received from " + account + ": " + packetType);
                 switch (packetType) {
                     case PING: {
                         sendPong();
@@ -269,7 +269,7 @@ public class ClientConnection extends Thread {
                 try {
                     os.writeByte(ServerPacketType.SERVER_ONLINE.ordinal());
                     os.writeUTF(server);
-                    LOGGER.info("Packet sent: SERVER_ONLINE");
+                    LOGGER.info("Packet sent to " + account + ": SERVER_ONLINE");
                 } catch (IOException e) {
                     LOGGER.error("Could not send SERVER_ONLINE");
                 }
@@ -300,7 +300,7 @@ public class ClientConnection extends Thread {
                     os.writeLong(uuid.getLeastSignificantBits());
                     os.writeUTF(name);
                     os.writeLong(joinTime);
-                    LOGGER.info("Packet sent: PLAYER_ONLINE");
+                    LOGGER.info("Packet sent to " + account + ": PLAYER_ONLINE");
                 } catch (IOException e) {
                     LOGGER.error("Could not send PLAYER_ONLINE");
                 }
@@ -341,7 +341,7 @@ public class ClientConnection extends Thread {
                     }
                     os.writeInt(data.length);
                     os.write(data);
-                    LOGGER.info("Packet sent: DATA");
+                    LOGGER.info("Packet sent to " + account + ": DATA");
                 } catch (IOException e) {
                     LOGGER.error("Could not send DATA");
                 }
