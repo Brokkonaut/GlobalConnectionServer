@@ -204,25 +204,30 @@ public class ClientConnection extends Thread {
     public void sendLoginResultAndActivateEncryption(boolean success, ClientConfig config) throws IOException {
         os.writeByte(success ? 0 : 1);
 
-        byte[] seedOut;
-        byte[] seedIn;
+        byte[] secret;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(randomNumberServer);
             digest.update(config.getPassword().getBytes(StandardCharsets.UTF_8));
             digest.update(randomNumberClient);
-            seedOut = digest.digest();
-            digest.reset();
-            digest.update(randomNumberClient);
-            digest.update(randomNumberServer);
-            digest.update(config.getPassword().getBytes(StandardCharsets.UTF_8));
-            seedIn = digest.digest();
+            secret = digest.digest();
         } catch (NoSuchAlgorithmException e) {
             throw new Error(e);// impossible
         }
 
-        SecretKey kpOut = generateSecretKey(new SecureRandom(seedOut));
-        SecretKey kpIn = generateSecretKey(new SecureRandom(seedIn));
+        SecureRandom secureRandom = new SecureRandom();
+        SecretKey kpOut = generateSecretKey(secureRandom);
+        SecretKey kpIn = generateSecretKey(secureRandom);
+        byte[] out = new byte[32];
+        byte[] encoded = kpOut.getEncoded();
+        for (int i = 0; i < 16; i++) {
+            out[i] = (byte) (secret[i] ^ encoded[i]);
+        }
+        encoded = kpIn.getEncoded();
+        for (int i = 0; i < 16; i++) {
+            out[i + 16] = (byte) (secret[i + 16] ^ encoded[i]);
+        }
+        os.write(out);
 
         try {
             Cipher cipherAESout = Cipher.getInstance("AES/CFB8/NoPadding");
