@@ -4,3 +4,4 @@
 /target
 /logs
 /config.yml
+/dependency-reduced-pom.xml
