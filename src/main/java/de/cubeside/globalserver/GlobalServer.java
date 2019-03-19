@@ -1,16 +1,21 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.command.ListCommand;
+import de.cubeside.globalserver.command.ServersCommand;
+import de.cubeside.globalserver.command.StopCommand;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class GlobalServer {
-    private final static Logger LOGGER = LogManager.getLogger("Server");
+    public final static Logger LOGGER = LogManager.getLogger("Server");
 
     private ServerListener listener;
     private SimpleConsole console;
@@ -23,19 +28,30 @@ public class GlobalServer {
 
     private ArrayList<ClientConnection> connections;
 
+    private HashMap<String, ServerCommand> commands;
+
     private final Object sync = new Object();
 
     public GlobalServer() {
         LOGGER.info("Starting GlobalServer...");
         clientConfigs = new HashMap<>();
-        addClientConfig("test", "testpassword");
-        addClientConfig("test2", "testpassword");
-        addClientConfig("test3", "testpassword");
+        addAccount("test", "testpassword");
+        addAccount("test2", "testpassword");
+        addAccount("test3", "testpassword");
         pendingConnections = new ArrayList<>();
         connections = new ArrayList<>();
+        commands = new HashMap<>();
+
+        addCommand(new StopCommand());
+        addCommand(new ServersCommand());
+        addCommand(new ListCommand());
     }
 
-    private void addClientConfig(String login, String password) {
+    private void addCommand(ServerCommand command) {
+        commands.put(command.getCommand().toLowerCase().trim(), command);
+    }
+
+    private void addAccount(String login, String password) {
         Objects.requireNonNull(login, "login must not be null");
         Objects.requireNonNull(password, "password must not be null");
         if (clientConfigs.containsKey(login)) {
@@ -44,9 +60,21 @@ public class GlobalServer {
         clientConfigs.put(login, new ClientConfig(login, password));
     }
 
+    public Collection<ClientConfig> getAccounts() {
+        return Collections.unmodifiableCollection(clientConfigs.values());
+    }
+
+    public ClientConfig getAccount(String name) {
+        return clientConfigs.get(name);
+    }
+
+    public List<ClientConnection> getConnections() {
+        return Collections.unmodifiableList(connections);
+    }
+
     public void run() {
         running = true;
-        int port = 12345;
+        int port = 25701;
         try {
             listener = new ServerListener(this, port);
             listener.start();
@@ -83,27 +111,16 @@ public class GlobalServer {
         String cmd = (firstSpace < 0 ? line : line.substring(0, firstSpace)).toLowerCase().trim();
         String args = firstSpace < 0 ? "" : line.substring(firstSpace + 1);
         synchronized (sync) {
-            if (cmd.equals("stop")) {
-                stopServer();
-            } else if (cmd.equals("servers")) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Servers (").append(connections.size()).append("): ");
-                boolean first = true;
-                for (ClientConnection cc : connections) {
-                    if (!first) {
-                        sb.append(", ");
-                    }
-                    first = false;
-                    sb.append(cc.getAccount());
-                }
-                LOGGER.info(sb.toString());
+            ServerCommand command = commands.get(cmd);
+            if (command != null) {
+                command.execute(this, args);
             } else {
                 LOGGER.info("Unknown command: " + cmd);
             }
         }
     }
 
-    private void stopServer() {
+    public void stopServer() {
         listener.shutdown();
         synchronized (sync) {
             running = false;
