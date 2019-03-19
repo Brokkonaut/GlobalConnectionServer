@@ -1,9 +1,22 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.command.AccountInfoCommand;
+import de.cubeside.globalserver.command.AccountSetPasswordCommand;
+import de.cubeside.globalserver.command.AccountsCommand;
+import de.cubeside.globalserver.command.CreateAccountCommand;
+import de.cubeside.globalserver.command.HelpCommand;
 import de.cubeside.globalserver.command.ListCommand;
 import de.cubeside.globalserver.command.ServersCommand;
 import de.cubeside.globalserver.command.StopCommand;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,6 +26,9 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.yaml.snakeyaml.TypeDescription;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 
 public class GlobalServer {
     public final static Logger LOGGER = LogManager.getLogger("Server");
@@ -21,6 +37,10 @@ public class GlobalServer {
     private SimpleConsole console;
 
     private boolean running;
+
+    private File configFile = new File("config.yml");
+    private Yaml configYaml;
+    private ServerConfig serverConfig;
 
     private HashMap<String, ClientConfig> clientConfigs;
 
@@ -34,30 +54,72 @@ public class GlobalServer {
 
     public GlobalServer() {
         LOGGER.info("Starting GlobalServer...");
+
+        Constructor constructor = new Constructor(ServerConfig.class);
+        TypeDescription serverConfigDescription = new TypeDescription(ServerConfig.class);
+        serverConfigDescription.addPropertyParameters("clientConfigs", ClientConfig.class);
+        constructor.addTypeDescription(serverConfigDescription);
+        configYaml = new Yaml(constructor);
+
+        if (configFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), Charset.forName("UTF-8")))) {
+                serverConfig = configYaml.loadAs(reader, ServerConfig.class);
+            } catch (Exception e) {
+                LOGGER.error("Could not parse config!", e);
+            }
+        }
+        if (serverConfig == null) {
+            serverConfig = new ServerConfig();
+            LOGGER.info("Generating new config!");
+            if (!configFile.exists()) {
+                saveConfig();
+            }
+        }
         clientConfigs = new HashMap<>();
-        addAccount("test", "testpassword");
-        addAccount("test2", "testpassword");
-        addAccount("test3", "testpassword");
+        for (ClientConfig cc : serverConfig.getClientConfigs()) {
+            clientConfigs.put(cc.getLogin(), cc);
+        }
         pendingConnections = new ArrayList<>();
         connections = new ArrayList<>();
         commands = new HashMap<>();
 
+        addCommand(new HelpCommand());
         addCommand(new StopCommand());
         addCommand(new ServersCommand());
         addCommand(new ListCommand());
+        addCommand(new AccountsCommand());
+        addCommand(new AccountInfoCommand());
+        addCommand(new CreateAccountCommand());
+        addCommand(new AccountSetPasswordCommand());
+    }
+
+    public Collection<ServerCommand> getCommands() {
+        return Collections.unmodifiableCollection(commands.values());
     }
 
     private void addCommand(ServerCommand command) {
         commands.put(command.getCommand().toLowerCase().trim(), command);
     }
 
-    private void addAccount(String login, String password) {
+    public void addAccount(String login, String password) {
         Objects.requireNonNull(login, "login must not be null");
         Objects.requireNonNull(password, "password must not be null");
         if (clientConfigs.containsKey(login)) {
             throw new IllegalArgumentException("Login name in use: " + login);
         }
-        clientConfigs.put(login, new ClientConfig(login, password));
+        ClientConfig cfg = new ClientConfig(login, password);
+        clientConfigs.put(login, cfg);
+        serverConfig.getClientConfigs().add(cfg);
+        saveConfig();
+    }
+
+    public void saveConfig() {
+        String output = configYaml.dumpAsMap(serverConfig);
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFile), Charset.forName("UTF-8")))) {
+            writer.write(output);
+        } catch (Exception e) {
+            LOGGER.error("Could not save config!", e);
+        }
     }
 
     public Collection<ClientConfig> getAccounts() {
@@ -74,7 +136,12 @@ public class GlobalServer {
 
     public void run() {
         running = true;
-        int port = 25701;
+        int port = serverConfig.getPort();
+        if (port <= 0) {
+            port = 25701;
+            serverConfig.setPort(port);
+            saveConfig();
+        }
         try {
             listener = new ServerListener(this, port);
             listener.start();

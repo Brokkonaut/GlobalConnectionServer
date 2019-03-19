@@ -9,6 +9,9 @@ public class ClientConfig {
     private String login;
     private String password;
 
+    public ClientConfig() {
+    }
+
     public ClientConfig(String login, String password) {
         this.login = login;
         this.password = password;
@@ -20,6 +23,14 @@ public class ClientConfig {
 
     public String getPassword() {
         return password;
+    }
+
+    public void setLogin(String login) {
+        this.login = login;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public boolean checkPassword(byte[] password, byte[] saltServer, byte[] saltClient) {
