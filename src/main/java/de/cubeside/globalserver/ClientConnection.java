@@ -346,7 +346,7 @@ public class ClientConnection extends Thread {
                     }
                     os.writeInt(data.length);
                     os.write(data);
-                    LOGGER.info("Packet sent to " + account + ": DATA");
+                    // LOGGER.info("Packet sent to " + account + ": DATA");
                 } catch (IOException e) {
                     LOGGER.error("Could not send DATA");
                 }
