@@ -1,7 +1,10 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.command.AccountAddAllowedChannelCommand;
 import de.cubeside.globalserver.command.AccountInfoCommand;
+import de.cubeside.globalserver.command.AccountRemoveAllowedChannelCommand;
 import de.cubeside.globalserver.command.AccountSetPasswordCommand;
+import de.cubeside.globalserver.command.AccountSetRestrictedCommand;
 import de.cubeside.globalserver.command.AccountsCommand;
 import de.cubeside.globalserver.command.CreateAccountCommand;
 import de.cubeside.globalserver.command.HelpCommand;
@@ -21,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -64,6 +68,7 @@ public class GlobalServer {
         if (configFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(configFile), Charset.forName("UTF-8")))) {
                 serverConfig = configYaml.loadAs(reader, ServerConfig.class);
+                saveConfig();
             } catch (Exception e) {
                 LOGGER.error("Could not parse config!", e);
             }
@@ -91,6 +96,9 @@ public class GlobalServer {
         addCommand(new AccountInfoCommand());
         addCommand(new CreateAccountCommand());
         addCommand(new AccountSetPasswordCommand());
+        addCommand(new AccountSetRestrictedCommand());
+        addCommand(new AccountAddAllowedChannelCommand());
+        addCommand(new AccountRemoveAllowedChannelCommand());
     }
 
     public Collection<ServerCommand> getCommands() {
@@ -107,7 +115,7 @@ public class GlobalServer {
         if (clientConfigs.containsKey(login)) {
             throw new IllegalArgumentException("Login name in use: " + login);
         }
-        ClientConfig cfg = new ClientConfig(login, password);
+        ClientConfig cfg = new ClientConfig(login, password, false, new HashSet<>());
         clientConfigs.put(login, cfg);
         serverConfig.getClientConfigs().add(cfg);
         saveConfig();
@@ -180,7 +188,14 @@ public class GlobalServer {
         synchronized (sync) {
             ServerCommand command = commands.get(cmd);
             if (command != null) {
-                command.execute(this, args);
+                ArrayList<String> splitArgs = new ArrayList<>();
+                for (String s : args.trim().split(" ++")) {
+                    String s2 = s.trim();
+                    if (s2.length() > 0) {
+                        splitArgs.add(s2);
+                    }
+                }
+                command.execute(this, new ArgsParser(splitArgs.toArray(new String[splitArgs.size()])));
             } else {
                 LOGGER.info("Unknown command: " + cmd);
             }
@@ -220,14 +235,14 @@ public class GlobalServer {
         }
     }
 
-    public boolean processLogin(ClientConnection connection, String account, byte[] password, byte[] saltServer, byte[] saltClient) throws IOException {
+    public ClientConfig processLogin(ClientConnection connection, String account, byte[] password, byte[] saltServer, byte[] saltClient) throws IOException {
         synchronized (sync) {
             ClientConfig config = clientConfigs.get(account);
             if (config == null || !config.checkPassword(password, saltServer, saltClient)) {
                 LOGGER.info("Login failed for '" + account + "'.");
                 pendingConnections.remove(connection);
                 connection.sendLoginResultAndActivateEncryption(false, null);
-                return false;
+                return null;
             }
             LOGGER.info("Login successfull for '" + account + "'.");
 
@@ -253,7 +268,7 @@ public class GlobalServer {
                     }
                 }
             }
-            return true;
+            return config;
         }
     }
 
@@ -289,12 +304,22 @@ public class GlobalServer {
         }
     }
 
-    public void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data) {
-        for (ClientConnection cc : connections) {
-            if (cc != connection) {
-                if (targetServer == null || cc.getAccount().equals(targetServer)) {
-                    if (targetUuid == null || cc.hasPlayer(targetUuid)) {
-                        cc.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+    public void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
+        boolean fromRestricted = connection.getClient().isRestricted();
+        if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
+            for (ClientConnection cc : connections) {
+                if (cc != connection) {
+                    boolean toRestricted = cc.getClient().isRestricted();
+                    if (!toRestricted || cc.getClient().getAllowedChannels().contains(channel)) {
+                        boolean explicitServer = targetServer != null && cc.getAccount().equals(targetServer);
+                        if (targetServer == null || explicitServer) {
+                            boolean explicitPlayer = targetUuid != null && cc.hasPlayer(targetUuid);
+                            if (toAllUnrestrictedServers || targetUuid == null || explicitPlayer) {
+                                if (allowRestricted || (!fromRestricted && !toRestricted) || explicitServer || explicitPlayer) {
+                                    cc.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+                                }
+                            }
+                        }
                     }
                 }
             }

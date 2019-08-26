@@ -1,5 +1,6 @@
 package de.cubeside.globalserver.command;
 
+import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
 import java.security.SecureRandom;
@@ -10,12 +11,12 @@ public class CreateAccountCommand extends ServerCommand {
     }
 
     @Override
-    public void execute(GlobalServer server, String args) {
-        if (args.length() == 0 || args.indexOf(' ') > 0) {
+    public void execute(GlobalServer server, ArgsParser args) {
+        if (args.remaining() != 1) {
             GlobalServer.LOGGER.info("/createaccount <name>");
             return;
         }
-        String accountName = args.toLowerCase().trim();
+        String accountName = args.getNext().toLowerCase().trim();
         if (server.getAccount(accountName) != null) {
             GlobalServer.LOGGER.info("Account " + accountName + " already exists!");
             return;

@@ -1,5 +1,6 @@
 package de.cubeside.globalserver.command;
 
+import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
 import java.util.Collection;
@@ -10,7 +11,7 @@ public class HelpCommand extends ServerCommand {
     }
 
     @Override
-    public void execute(GlobalServer server, String args) {
+    public void execute(GlobalServer server, ArgsParser args) {
         Collection<ServerCommand> commands = server.getCommands();
         StringBuilder sb = new StringBuilder();
         for (ServerCommand cc : commands) {

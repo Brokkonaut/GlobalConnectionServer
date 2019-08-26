@@ -4,17 +4,23 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClientConfig {
     private String login;
     private String password;
+    private boolean restricted;
+    private Set<String> allowedChannels;
 
     public ClientConfig() {
     }
 
-    public ClientConfig(String login, String password) {
+    public ClientConfig(String login, String password, boolean restricted, Set<String> allowedChannels) {
         this.login = login;
         this.password = password;
+        this.restricted = restricted;
+        this.allowedChannels = allowedChannels == null ? new HashSet<>() : new HashSet<>(allowedChannels);
     }
 
     public String getLogin() {
@@ -25,12 +31,28 @@ public class ClientConfig {
         return password;
     }
 
+    public boolean isRestricted() {
+        return restricted;
+    }
+
+    public Set<String> getAllowedChannels() {
+        return allowedChannels;
+    }
+
     public void setLogin(String login) {
         this.login = login;
     }
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setRestricted(boolean restricted) {
+        this.restricted = restricted;
+    }
+
+    public void setAllowedChannels(Set<String> allowedChannels) {
+        this.allowedChannels = allowedChannels == null ? new HashSet<>() : new HashSet<>(allowedChannels);
     }
 
     public boolean checkPassword(byte[] password, byte[] saltServer, byte[] saltClient) {

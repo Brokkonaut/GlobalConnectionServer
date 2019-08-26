@@ -11,5 +11,5 @@ public abstract class ServerCommand {
         return cmd;
     }
 
-    public abstract void execute(GlobalServer server, String args);
+    public abstract void execute(GlobalServer server, ArgsParser args);
 }

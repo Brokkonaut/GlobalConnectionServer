@@ -40,6 +40,7 @@ public class ClientConnection extends Thread {
     private DataInputStream is;
 
     private String account;
+    private ClientConfig client;
     private HashMap<UUID, OnlinePlayer> playersOnline;
 
     public ClientConnection(GlobalServer server, Socket socket) {
@@ -69,7 +70,8 @@ public class ClientConnection extends Thread {
             account = is.readUTF();
             byte[] password = new byte[32];
             is.readFully(password);
-            if (!server.processLogin(this, account, password, randomNumberServer, randomNumberClient)) {
+            ClientConfig result = server.processLogin(this, account, password, randomNumberServer, randomNumberClient);
+            if (result == null) {
                 LOGGER.info("Login for '" + account + "' failed from " + socket.getInetAddress().getHostAddress());
                 try {
                     Thread.sleep(1000);
@@ -83,6 +85,7 @@ public class ClientConnection extends Thread {
                 }
                 return; // finished
             }
+            client = result;
 
             while (true) {
                 ClientPacketType packetType = ClientPacketType.valueOf(is.readByte());
@@ -130,6 +133,14 @@ public class ClientConnection extends Thread {
                         if ((flags & 0x02) != 0) {
                             targetServer = is.readUTF();
                         }
+                        boolean allowRestricted = false;
+                        if ((flags & 0x04) != 0) {
+                            allowRestricted = true;
+                        }
+                        boolean toAllUnrestrictedServers = false;
+                        if ((flags & 0x08) != 0) {
+                            toAllUnrestrictedServers = true;
+                        }
                         int dataSize = is.readInt();
                         if (dataSize > 10_000_000 || dataSize < 0) {
                             // 10 mb
@@ -139,7 +150,7 @@ public class ClientConnection extends Thread {
                         }
                         byte[] data = new byte[dataSize];
                         is.readFully(data);
-                        server.processData(this, channel, targetUuid, targetServer, data);
+                        server.processData(this, channel, targetUuid, targetServer, data, allowRestricted, toAllUnrestrictedServers);
                         break;
                     }
                 }
@@ -179,6 +190,10 @@ public class ClientConnection extends Thread {
 
     public String getAccount() {
         return account;
+    }
+
+    public ClientConfig getClient() {
+        return client;
     }
 
     public boolean addPlayer(UUID uuid, String name, long joinTime) {

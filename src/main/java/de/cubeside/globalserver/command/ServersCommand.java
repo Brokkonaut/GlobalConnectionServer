@@ -1,5 +1,6 @@
 package de.cubeside.globalserver.command;
 
+import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.ClientConnection;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
@@ -11,7 +12,7 @@ public class ServersCommand extends ServerCommand {
     }
 
     @Override
-    public void execute(GlobalServer server, String args) {
+    public void execute(GlobalServer server, ArgsParser args) {
         StringBuilder sb = new StringBuilder();
         List<ClientConnection> connections = server.getConnections();
         sb.append("Servers (").append(connections.size()).append("): ");
