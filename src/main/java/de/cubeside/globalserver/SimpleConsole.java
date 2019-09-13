@@ -35,7 +35,7 @@ public class SimpleConsole {
             while (running) {
                 try {
                     String line = reader.readLine();
-                    server.processCommand(line);
+                    server.processCommand(line == null ? "stop" : line);
                 } catch (IOException e) {
                     logger.log(Level.ERROR, "Error reding from console", e);
                 }
