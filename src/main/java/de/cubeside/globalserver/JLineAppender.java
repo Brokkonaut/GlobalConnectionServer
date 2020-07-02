@@ -1,5 +1,6 @@
 package de.cubeside.globalserver;
 
+import java.io.PrintStream;
 import java.io.Serializable;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Core;
@@ -15,8 +16,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 
 @Plugin(name = "JLineAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class JLineAppender extends AbstractAppender {
+    private PrintStream realSystemOut;
+
     protected JLineAppender(String name, Filter filter, Layout<? extends Serializable> layout) {
         super(name, filter, layout, true, Property.EMPTY_ARRAY);
+        realSystemOut = System.out;
     }
 
     @PluginFactory
@@ -31,7 +35,7 @@ public class JLineAppender extends AbstractAppender {
         if (console != null) {
             console.appendOutput(message);
         } else {
-            System.out.print(message);
+            realSystemOut.print(message);
         }
     }
 }

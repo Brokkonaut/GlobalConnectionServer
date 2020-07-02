@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.io.IoBuilder;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -37,6 +40,10 @@ import org.yaml.snakeyaml.constructor.Constructor;
 public class GlobalServer {
     static {
         System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+        PrintStream logger = IoBuilder.forLogger("System.out").setLevel(Level.INFO).buildPrintStream();
+        PrintStream errorLogger = IoBuilder.forLogger("System.err").setLevel(Level.ERROR).buildPrintStream();
+        System.setOut(logger);
+        System.setErr(errorLogger);
     }
     public final static Logger LOGGER = LogManager.getLogger("Server");
 
