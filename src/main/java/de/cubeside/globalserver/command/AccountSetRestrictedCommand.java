@@ -4,6 +4,9 @@ import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 
 public class AccountSetRestrictedCommand extends ServerCommand {
     public AccountSetRestrictedCommand() {
@@ -26,5 +29,19 @@ public class AccountSetRestrictedCommand extends ServerCommand {
         account.setRestricted(restricted);
         server.saveConfig();
         GlobalServer.LOGGER.info("Account " + accountName + " is now " + (account.isRestricted() ? "" : "un") + "restricted");
+    }
+
+    @Override
+    public Collection<String> tabComplete(GlobalServer server, ArgsParser argsParser) {
+        if (argsParser.remaining() == 1) {
+            ArrayList<String> result = new ArrayList<>();
+            for (ClientConfig e : server.getAccounts()) {
+                result.add(e.getLogin());
+            }
+            return result;
+        } else if (argsParser.remaining() == 2) {
+            return Arrays.asList("true", "false");
+        }
+        return null;
     }
 }

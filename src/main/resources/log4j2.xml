@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="warn">
+<Configuration xmlns:xi="http://www.w3.org/2001/XInclude" status="warn" packages="org.apache.logging.log4j,de.cubeside.globalserver">
     <Appenders>
+        <JLineAppender name="JLineAppender">
+            <PatternLayout pattern="[%d{HH:mm:ss} %level]: [%c] %msg%n" />
+        </JLineAppender>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss} %level]: [%c] %msg%n" />
         </Console>
@@ -10,13 +13,13 @@
                 <TimeBasedTriggeringPolicy />
                 <OnStartupTriggeringPolicy />
             </Policies>
-            <DefaultRolloverStrategy max="20"/>
+            <DefaultRolloverStrategy max="20" />
         </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <Root level="info">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
+            <AppenderRef ref="JLineAppender" />
+            <AppenderRef ref="File" />
         </Root>
     </Loggers>
 </Configuration>

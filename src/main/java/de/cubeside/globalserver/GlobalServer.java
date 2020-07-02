@@ -35,10 +35,13 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
 public class GlobalServer {
+    static {
+        System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    }
     public final static Logger LOGGER = LogManager.getLogger("Server");
 
     private ServerListener listener;
-    private SimpleConsole console;
+    private static Console console;
 
     private boolean running;
 
@@ -57,6 +60,8 @@ public class GlobalServer {
     private final Object sync = new Object();
 
     public GlobalServer() {
+        console = new JLineConsole(this);
+
         LOGGER.info("Starting GlobalServer...");
 
         Constructor constructor = new Constructor(ServerConfig.class);
@@ -103,6 +108,14 @@ public class GlobalServer {
 
     public Collection<ServerCommand> getCommands() {
         return Collections.unmodifiableCollection(commands.values());
+    }
+
+    public Collection<String> getCommandNames() {
+        return Collections.unmodifiableCollection(commands.keySet());
+    }
+
+    public ServerCommand getCommand(String name) {
+        return commands.get(name.toLowerCase());
     }
 
     private void addCommand(ServerCommand command) {
@@ -157,7 +170,6 @@ public class GlobalServer {
             LOGGER.error("Could not bind to " + port + ": " + e.getMessage());
             return;
         }
-        console = new SimpleConsole(this);
         synchronized (sync) {
             while (running) {
                 for (ClientConnection cc : connections) {
@@ -324,5 +336,9 @@ public class GlobalServer {
                 }
             }
         }
+    }
+
+    public static Console getConsole() {
+        return console;
     }
 }

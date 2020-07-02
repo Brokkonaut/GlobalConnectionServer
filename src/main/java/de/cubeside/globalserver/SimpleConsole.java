@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SimpleConsole {
+public class SimpleConsole implements Console {
     private final static Logger logger = LogManager.getLogger("Console");
     private GlobalServer server;
     private SimpleConsoleReaderThread thread;
@@ -23,8 +23,14 @@ public class SimpleConsole {
         this.thread.start();
     }
 
+    @Override
     public void stop() {
         running = false;
+    }
+
+    @Override
+    public void appendOutput(String message) {
+        System.out.println(message);
     }
 
     private class SimpleConsoleReaderThread extends Thread {
