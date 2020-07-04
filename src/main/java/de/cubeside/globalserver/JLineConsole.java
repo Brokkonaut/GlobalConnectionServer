@@ -10,6 +10,7 @@ import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
+import org.jline.reader.LineReader.Option;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.ParsedLine;
 import org.jline.reader.UserInterruptException;
@@ -31,7 +32,13 @@ public class JLineConsole implements Console {
         logger.log(Level.INFO, "Starting console...");
         try {
             Terminal terminal = TerminalBuilder.builder().build();
-            lineReader = LineReaderBuilder.builder().terminal(terminal).history(new DefaultHistory()).completer(new ConsoleCompleter()).build();
+            lineReader = LineReaderBuilder.builder()
+                    .terminal(terminal)
+                    .history(new DefaultHistory())
+                    .completer(new ConsoleCompleter())
+                    .option(Option.DISABLE_EVENT_EXPANSION, true)
+                    // .variable("history-file", ".history")
+                    .build();
         } catch (IOException e) {
             logger.log(Level.ERROR, "Error creating console", e);
         }
