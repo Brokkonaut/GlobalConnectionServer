@@ -85,7 +85,7 @@ public class ClientConnection extends Thread {
                 }
                 return; // finished
             }
-            client = result;
+            // client = result;
 
             while (true) {
                 ClientPacketType packetType = ClientPacketType.valueOf(is.readByte());
@@ -164,8 +164,11 @@ public class ClientConnection extends Thread {
             }
             if (e instanceof SocketTimeoutException) {
                 LOGGER.info("Connection for '" + account + "' from " + socket.getInetAddress().getHostAddress() + " timed out.");
+            } else if (e instanceof IOException) {
+                LOGGER.info("Connection for '" + account + "' from " + socket.getInetAddress().getHostAddress() + " closed: " + e.getMessage());
+            } else {
+                LOGGER.error("Exception in handler thread for '" + account + "' from " + socket.getInetAddress().getHostAddress() + ".", e);
             }
-            LOGGER.info("Connection for '" + account + "' from " + socket.getInetAddress().getHostAddress() + " closed.");
         }
     }
 
@@ -194,6 +197,10 @@ public class ClientConnection extends Thread {
 
     public ClientConfig getClient() {
         return client;
+    }
+
+    void setClient(ClientConfig client) {
+        this.client = client;
     }
 
     public boolean addPlayer(UUID uuid, String name, long joinTime) {

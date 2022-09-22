@@ -273,6 +273,8 @@ public class GlobalServer {
                 }
             }
 
+            connection.setClient(config);
+
             pendingConnections.remove(connection);
             connections.add(connection);
             connection.sendLoginResultAndActivateEncryption(true, config);
@@ -326,16 +328,18 @@ public class GlobalServer {
     public void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
         boolean fromRestricted = connection.getClient().isRestricted();
         if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
-            for (ClientConnection cc : connections) {
-                if (cc != connection) {
-                    boolean toRestricted = cc.getClient().isRestricted();
-                    if (!toRestricted || cc.getClient().getAllowedChannels().contains(channel)) {
-                        boolean explicitServer = targetServer != null && cc.getAccount().equals(targetServer);
-                        if (targetServer == null || explicitServer) {
-                            boolean explicitPlayer = targetUuid != null && cc.hasPlayer(targetUuid);
-                            if (toAllUnrestrictedServers || targetUuid == null || explicitPlayer) {
-                                if (allowRestricted || (!fromRestricted && !toRestricted) || explicitServer || explicitPlayer) {
-                                    cc.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+            synchronized (sync) {
+                for (ClientConnection cc : connections) {
+                    if (cc != connection) {
+                        boolean toRestricted = cc.getClient().isRestricted();
+                        if (!toRestricted || cc.getClient().getAllowedChannels().contains(channel)) {
+                            boolean explicitServer = targetServer != null && cc.getAccount().equals(targetServer);
+                            if (targetServer == null || explicitServer) {
+                                boolean explicitPlayer = targetUuid != null && cc.hasPlayer(targetUuid);
+                                if (toAllUnrestrictedServers || targetUuid == null || explicitPlayer) {
+                                    if (allowRestricted || (!fromRestricted && !toRestricted) || explicitServer || explicitPlayer) {
+                                        cc.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+                                    }
                                 }
                             }
                         }
