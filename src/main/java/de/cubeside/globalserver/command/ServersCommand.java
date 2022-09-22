@@ -4,6 +4,7 @@ import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.ClientConnection;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ServersCommand extends ServerCommand {
@@ -17,12 +18,17 @@ public class ServersCommand extends ServerCommand {
         List<ClientConnection> connections = server.getConnections();
         sb.append("Servers (").append(connections.size()).append("): ");
         boolean first = true;
+        ArrayList<String> accounts = new ArrayList<>();
         for (ClientConnection cc : connections) {
+            accounts.add(cc.getAccount());
+        }
+        accounts.sort(null);
+        for (String account : accounts) {
             if (!first) {
                 sb.append(", ");
             }
             first = false;
-            sb.append(cc.getAccount());
+            sb.append(account);
         }
         GlobalServer.LOGGER.info(sb.toString());
     }

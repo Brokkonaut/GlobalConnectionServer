@@ -4,7 +4,7 @@ import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
-import java.util.Collection;
+import java.util.ArrayList;
 
 public class AccountsCommand extends ServerCommand {
     public AccountsCommand() {
@@ -14,7 +14,8 @@ public class AccountsCommand extends ServerCommand {
     @Override
     public void execute(GlobalServer server, ArgsParser args) {
         StringBuilder sb = new StringBuilder();
-        Collection<ClientConfig> accounts = server.getAccounts();
+        ArrayList<ClientConfig> accounts = new ArrayList<>(server.getAccounts());
+        accounts.sort((a1, a2) -> a1.getLogin().compareTo(a2.getLogin()));
         sb.append("Accounts (").append(accounts.size()).append("): ");
         boolean first = true;
         for (ClientConfig cc : accounts) {
