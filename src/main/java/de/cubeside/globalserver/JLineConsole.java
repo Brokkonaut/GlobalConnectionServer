@@ -18,7 +18,7 @@ import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
-public class JLineConsole implements Console {
+public class JLineConsole implements ConsoleImpl {
     private final static Logger logger = LogManager.getLogger("Console");
     private GlobalServer server;
     private SimpleConsoleReaderThread thread;

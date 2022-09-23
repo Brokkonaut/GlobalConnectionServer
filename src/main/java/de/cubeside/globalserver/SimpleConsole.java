@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SimpleConsole implements Console {
+public class SimpleConsole implements ConsoleImpl {
     private final static Logger logger = LogManager.getLogger("Console");
     private GlobalServer server;
     private SimpleConsoleReaderThread thread;

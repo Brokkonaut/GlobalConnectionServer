@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -53,7 +54,7 @@ public class GlobalServer {
     public final static Logger LOGGER = LogManager.getLogger("Server");
 
     private ServerListener listener;
-    private static Console console;
+    private static ConsoleImpl console;
 
     private boolean running;
 
@@ -67,7 +68,7 @@ public class GlobalServer {
 
     private ArrayList<ClientConnection> connections;
 
-    private HashMap<String, ServerCommand> commands;
+    private ConcurrentHashMap<String, ServerCommand> commands;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     /**
@@ -116,7 +117,7 @@ public class GlobalServer {
         }
         pendingConnections = new ArrayList<>();
         connections = new ArrayList<>();
-        commands = new HashMap<>();
+        commands = new ConcurrentHashMap<>();
 
         addCommand(new HelpCommand());
         addCommand(new StopCommand());
@@ -180,7 +181,7 @@ public class GlobalServer {
         return Collections.unmodifiableList(connections);
     }
 
-    public void run() {
+    void run() {
         running = true;
         int port = serverConfig.getPort();
         if (port <= 0) {
@@ -220,6 +221,23 @@ public class GlobalServer {
                 shutdownLock.unlock();
             }
         }
+        writeLock.lock();
+        try {
+            listener.shutdown();
+
+            for (ClientConnection cc : new ArrayList<>(pendingConnections)) {
+                cc.closeConnection();
+            }
+            pendingConnections.clear();
+            for (ClientConnection cc : new ArrayList<>(connections)) {
+                cc.closeConnection();
+            }
+            connections.clear();
+
+            console.stop();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     public static void main(String[] args) {
@@ -256,31 +274,16 @@ public class GlobalServer {
     }
 
     public void stopServer() {
-        listener.shutdown();
-        writeLock.lock();
+        shutdownLock.lock();
         try {
-            shutdownLock.lock();
-            try {
-                running = false;
-                shutdownCondition.signal();
-            } finally {
-                shutdownLock.unlock();
-            }
-            for (ClientConnection cc : new ArrayList<>(pendingConnections)) {
-                cc.closeConnection();
-            }
-            pendingConnections.clear();
-            for (ClientConnection cc : new ArrayList<>(connections)) {
-                cc.closeConnection();
-            }
-            connections.clear();
+            running = false;
+            shutdownCondition.signal();
         } finally {
-            writeLock.unlock();
+            shutdownLock.unlock();
         }
-        console.stop();
     }
 
-    public void addPendingConnection(ClientConnection connection) {
+    void addPendingConnection(ClientConnection connection) {
         writeLock.lock();
         try {
             pendingConnections.add(connection);
@@ -289,7 +292,7 @@ public class GlobalServer {
         }
     }
 
-    public void removeConnection(ClientConnection connection) {
+    void removeConnection(ClientConnection connection) {
         writeLock.lock();
         try {
             boolean wasOnline = connections.remove(connection);
@@ -306,7 +309,7 @@ public class GlobalServer {
         }
     }
 
-    public ClientConfig processLogin(ClientConnection connection, String account, byte[] password, byte[] saltServer, byte[] saltClient) throws IOException {
+    ClientConfig processLogin(ClientConnection connection, String account, byte[] password, byte[] saltServer, byte[] saltClient) throws IOException {
         writeLock.lock();
         try {
             ClientConfig config = clientConfigs.get(account);
@@ -348,7 +351,7 @@ public class GlobalServer {
         }
     }
 
-    public void processPlayerOnline(ClientConnection connection, UUID uuid, String name, long joinTime) {
+    void processPlayerOnline(ClientConnection connection, UUID uuid, String name, long joinTime) {
         writeLock.lock();
         try {
             if (connection.addPlayer(uuid, name, joinTime)) {
@@ -363,7 +366,7 @@ public class GlobalServer {
         }
     }
 
-    public void processPlayerOffline(ClientConnection connection, UUID uuid) {
+    void processPlayerOffline(ClientConnection connection, UUID uuid) {
         writeLock.lock();
         try {
             if (connection.removePlayer(uuid)) {
@@ -378,7 +381,7 @@ public class GlobalServer {
         }
     }
 
-    public void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
+    void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
         readLock.lock();
         try {
             boolean fromRestricted = connection.getClient().isRestricted();
