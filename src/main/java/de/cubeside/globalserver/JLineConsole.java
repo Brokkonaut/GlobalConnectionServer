@@ -76,7 +76,13 @@ public class JLineConsole implements Console {
                     for (int i = 0; i < wordCount; i++) {
                         wordsArray[i] = words.get(i + 1);
                     }
-                    Collection<String> result = command.tabComplete(server, new ArgsParser(wordsArray));
+                    Collection<String> result;
+                    server.getReadLock().lock();
+                    try {
+                        result = command.tabComplete(server, new ArgsParser(wordsArray));
+                    } finally {
+                        server.getReadLock().unlock();
+                    }
                     if (result != null && !result.isEmpty()) {
                         for (String suggestion : result) {
                             candidates.add(new Candidate(suggestion));

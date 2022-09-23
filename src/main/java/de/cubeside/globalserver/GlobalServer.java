@@ -29,6 +29,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +69,20 @@ public class GlobalServer {
 
     private HashMap<String, ServerCommand> commands;
 
-    private final Object sync = new Object();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    /**
+     * Required when a server is added/removed or a player is added/removed
+     */
+    private final Lock readLock = lock.readLock();
+    /**
+     * Required when a command is executed/tab completed or data is sent
+     */
+    private final Lock writeLock = lock.writeLock();
+    /**
+     * Used when accessing the field "running" and when waiting for/signaling the shutdownCondition
+     */
+    private final Lock shutdownLock = new ReentrantLock();
+    private final Condition shutdownCondition = shutdownLock.newCondition();
 
     public GlobalServer() {
         console = new JLineConsole(this);
@@ -177,16 +195,29 @@ public class GlobalServer {
             LOGGER.error("Could not bind to " + port + ": " + e.getMessage());
             return;
         }
-        synchronized (sync) {
-            while (running) {
+        while (true) {
+            readLock.lock();
+            try {
                 for (ClientConnection cc : connections) {
                     cc.sendPing();
                 }
-                try {
-                    sync.wait(20000);
-                } catch (InterruptedException e) {
-                    // ignore
+            } finally {
+                readLock.unlock();
+            }
+            shutdownLock.lock();
+            try {
+                if (running) {
+                    try {
+                        shutdownCondition.await(20, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
                 }
+                if (!running) {
+                    break;
+                }
+            } finally {
+                shutdownLock.unlock();
             }
         }
     }
@@ -204,28 +235,37 @@ public class GlobalServer {
         int firstSpace = line.indexOf(' ');
         String cmd = (firstSpace < 0 ? line : line.substring(0, firstSpace)).toLowerCase().trim();
         String args = firstSpace < 0 ? "" : line.substring(firstSpace + 1);
-        synchronized (sync) {
-            ServerCommand command = commands.get(cmd);
-            if (command != null) {
-                ArrayList<String> splitArgs = new ArrayList<>();
-                for (String s : args.trim().split(" ++")) {
-                    String s2 = s.trim();
-                    if (s2.length() > 0) {
-                        splitArgs.add(s2);
-                    }
+        ServerCommand command = commands.get(cmd);
+        if (command != null) {
+            ArrayList<String> splitArgs = new ArrayList<>();
+            for (String s : args.trim().split(" ++")) {
+                String s2 = s.trim();
+                if (s2.length() > 0) {
+                    splitArgs.add(s2);
                 }
-                command.execute(this, new ArgsParser(splitArgs.toArray(new String[splitArgs.size()])));
-            } else {
-                LOGGER.info("Unknown command: " + cmd);
             }
+            readLock.lock();
+            try {
+                command.execute(this, new ArgsParser(splitArgs.toArray(new String[splitArgs.size()])));
+            } finally {
+                readLock.unlock();
+            }
+        } else {
+            LOGGER.info("Unknown command: " + cmd);
         }
     }
 
     public void stopServer() {
         listener.shutdown();
-        synchronized (sync) {
-            running = false;
-            sync.notify();
+        writeLock.lock();
+        try {
+            shutdownLock.lock();
+            try {
+                running = false;
+                shutdownCondition.signal();
+            } finally {
+                shutdownLock.unlock();
+            }
             for (ClientConnection cc : new ArrayList<>(pendingConnections)) {
                 cc.closeConnection();
             }
@@ -234,28 +274,41 @@ public class GlobalServer {
                 cc.closeConnection();
             }
             connections.clear();
+        } finally {
+            writeLock.unlock();
         }
         console.stop();
     }
 
     public void addPendingConnection(ClientConnection connection) {
-        synchronized (sync) {
+        writeLock.lock();
+        try {
             pendingConnections.add(connection);
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public void removeConnection(ClientConnection connection) {
-        synchronized (sync) {
+        writeLock.lock();
+        try {
             boolean wasOnline = connections.remove(connection);
             pendingConnections.remove(connection);
             if (wasOnline) {
-                processServerOffline(connection);
+                for (ClientConnection cc : connections) {
+                    if (cc != connection) {
+                        cc.sendServerOffline(connection.getAccount());
+                    }
+                }
             }
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public ClientConfig processLogin(ClientConnection connection, String account, byte[] password, byte[] saltServer, byte[] saltClient) throws IOException {
-        synchronized (sync) {
+        writeLock.lock();
+        try {
             ClientConfig config = clientConfigs.get(account);
             if (config == null || !config.checkPassword(password, saltServer, saltClient)) {
                 LOGGER.info("Login failed for '" + account + "'.");
@@ -290,11 +343,14 @@ public class GlobalServer {
                 }
             }
             return config;
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public void processPlayerOnline(ClientConnection connection, UUID uuid, String name, long joinTime) {
-        synchronized (sync) {
+        writeLock.lock();
+        try {
             if (connection.addPlayer(uuid, name, joinTime)) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
@@ -302,11 +358,14 @@ public class GlobalServer {
                     }
                 }
             }
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public void processPlayerOffline(ClientConnection connection, UUID uuid) {
-        synchronized (sync) {
+        writeLock.lock();
+        try {
             if (connection.removePlayer(uuid)) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
@@ -314,21 +373,16 @@ public class GlobalServer {
                     }
                 }
             }
-        }
-    }
-
-    private void processServerOffline(ClientConnection connection) {
-        for (ClientConnection cc : connections) {
-            if (cc != connection) {
-                cc.sendServerOffline(connection.getAccount());
-            }
+        } finally {
+            writeLock.unlock();
         }
     }
 
     public void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
-        boolean fromRestricted = connection.getClient().isRestricted();
-        if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
-            synchronized (sync) {
+        readLock.lock();
+        try {
+            boolean fromRestricted = connection.getClient().isRestricted();
+            if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
                         boolean toRestricted = cc.getClient().isRestricted();
@@ -346,10 +400,16 @@ public class GlobalServer {
                     }
                 }
             }
+        } finally {
+            readLock.unlock();
         }
     }
 
     public static Console getConsole() {
         return console;
+    }
+
+    Lock getReadLock() {
+        return readLock;
     }
 }
