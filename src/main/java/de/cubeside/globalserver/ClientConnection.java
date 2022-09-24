@@ -1,5 +1,7 @@
 package de.cubeside.globalserver;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -255,12 +257,12 @@ public class ClientConnection extends Thread {
             Cipher cipherAESout = Cipher.getInstance("AES/CFB8/NoPadding");
             cipherAESout.init(Cipher.ENCRYPT_MODE, kpOut, new IvParameterSpec(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }));
 
-            os = new DataOutputStream(new CipherOutputStream(socketos, cipherAESout));
+            os = new DataOutputStream(new CipherOutputStream(new BufferedOutputStream(socketos), cipherAESout));
 
             Cipher cipherAESin = Cipher.getInstance("AES/CFB8/NoPadding");
             cipherAESin.init(Cipher.DECRYPT_MODE, kpIn, new IvParameterSpec(new byte[] { 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 }));
 
-            is = new DataInputStream(new CipherInputStream(socketis, cipherAESin));
+            is = new DataInputStream(new CipherInputStream(new BufferedInputStream(socketis), cipherAESin));
         } catch (GeneralSecurityException e) {
             throw new Error(e);// impossible?
         }
@@ -271,6 +273,7 @@ public class ClientConnection extends Thread {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PING.ordinal());
+                    os.flush();
                 } catch (IOException e) {
                     LOGGER.error("Could not send PING");
                 }
@@ -283,6 +286,7 @@ public class ClientConnection extends Thread {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PONG.ordinal());
+                    os.flush();
                 } catch (IOException e) {
                     LOGGER.error("Could not send PONG");
                 }
@@ -296,6 +300,7 @@ public class ClientConnection extends Thread {
                 try {
                     os.writeByte(ServerPacketType.SERVER_ONLINE.ordinal());
                     os.writeUTF(server);
+                    os.flush();
                     // LOGGER.info("Packet sent to " + account + ": SERVER_ONLINE");
                 } catch (IOException e) {
                     LOGGER.error("Could not send SERVER_ONLINE");
@@ -310,6 +315,7 @@ public class ClientConnection extends Thread {
                 try {
                     os.writeByte(ServerPacketType.SERVER_OFFLINE.ordinal());
                     os.writeUTF(server);
+                    os.flush();
                 } catch (IOException e) {
                     LOGGER.error("Could not send SERVER_OFFLINE");
                 }
@@ -327,6 +333,7 @@ public class ClientConnection extends Thread {
                     os.writeLong(uuid.getLeastSignificantBits());
                     os.writeUTF(name);
                     os.writeLong(joinTime);
+                    os.flush();
                     // LOGGER.info("Packet sent to " + account + ": PLAYER_ONLINE");
                 } catch (IOException e) {
                     LOGGER.error("Could not send PLAYER_ONLINE");
@@ -343,6 +350,7 @@ public class ClientConnection extends Thread {
                     os.writeUTF(server);
                     os.writeLong(uuid.getMostSignificantBits());
                     os.writeLong(uuid.getLeastSignificantBits());
+                    os.flush();
                 } catch (IOException e) {
                     LOGGER.error("Could not send PLAYER_OFFLINE");
                 }
@@ -368,6 +376,7 @@ public class ClientConnection extends Thread {
                     }
                     os.writeInt(data.length);
                     os.write(data);
+                    os.flush();
                     // LOGGER.info("Packet sent to " + account + ": DATA");
                 } catch (IOException e) {
                     LOGGER.error("Could not send DATA");
