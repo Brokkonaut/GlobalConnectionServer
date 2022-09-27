@@ -11,6 +11,10 @@ import de.cubeside.globalserver.command.HelpCommand;
 import de.cubeside.globalserver.command.ListCommand;
 import de.cubeside.globalserver.command.ServersCommand;
 import de.cubeside.globalserver.command.StopCommand;
+import de.cubeside.globalserver.event.EventBus;
+import de.cubeside.globalserver.plugin.Plugin;
+import de.cubeside.globalserver.plugin.PluginLoadException;
+import de.cubeside.globalserver.plugin.PluginManager;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -85,7 +89,12 @@ public class GlobalServer {
     private final Lock shutdownLock = new ReentrantLock();
     private final Condition shutdownCondition = shutdownLock.newCondition();
 
-    public GlobalServer() {
+    private final EventBus eventBus = new EventBus();
+    private HashMap<String, Plugin> plugins = new HashMap<>();
+
+    private PluginManager pluginManager;
+
+    public GlobalServer() throws PluginLoadException {
         console = new JLineConsole(this);
 
         LOGGER.info("Starting GlobalServer...");
@@ -130,6 +139,11 @@ public class GlobalServer {
         addCommand(new AccountSetRestrictedCommand());
         addCommand(new AccountAddAllowedChannelCommand());
         addCommand(new AccountRemoveAllowedChannelCommand());
+
+        File pluginFolder = new File("./plugins");
+        pluginFolder.mkdirs();
+        pluginManager = new PluginManager(pluginFolder);
+        pluginManager.loadPlugins();
     }
 
     public Collection<ServerCommand> getCommands() {
@@ -144,7 +158,7 @@ public class GlobalServer {
         return commands.get(name.toLowerCase());
     }
 
-    private void addCommand(ServerCommand command) {
+    public void addCommand(ServerCommand command) {
         commands.put(command.getCommand().toLowerCase().trim(), command);
     }
 
@@ -241,7 +255,11 @@ public class GlobalServer {
     }
 
     public static void main(String[] args) {
-        new GlobalServer().run();
+        try {
+            new GlobalServer().run();
+        } catch (PluginLoadException e) {
+            LOGGER.error("Could not load plugins", e);
+        }
         LogManager.shutdown();
     }
 
@@ -414,5 +432,9 @@ public class GlobalServer {
 
     Lock getReadLock() {
         return readLock;
+    }
+
+    public EventBus getEventBus() {
+        return eventBus;
     }
 }

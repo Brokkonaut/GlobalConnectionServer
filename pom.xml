@@ -52,6 +52,11 @@
             <artifactId>jline-reader</artifactId>
             <version>${jline.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.vdurmont</groupId>
+            <artifactId>semver4j</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
