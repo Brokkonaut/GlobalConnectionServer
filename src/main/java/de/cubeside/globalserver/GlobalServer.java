@@ -149,7 +149,7 @@ public class GlobalServer {
         pluginManager = pluginManagerWrapper.getPluginManager();
         pluginManagerWrapper.loadPlugins();
         for (Plugin plugin : pluginManager.getPlugins()) {
-            LOGGER.info("Loading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
+            LOGGER.info("Starting plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
             plugin.onLoad();
         }
     }
