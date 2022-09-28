@@ -1,27 +1,22 @@
 package de.cubeside.globalserver.plugin;
 
+import de.cubeside.globalserver.GlobalServer;
 import java.net.MalformedURLException;
 
 public class PluginContext {
+    private final GlobalServer server;
     private final PluginDescription description;
     private final PluginClassLoader classLoader;
     private Plugin mainClassInstance;
 
-    public PluginContext(PluginDescription description) throws PluginContextException {
+    public PluginContext(GlobalServer server, PluginDescription description) throws PluginContextException {
+        this.server = server;
         this.description = description;
         try {
-            this.classLoader = new PluginClassLoader(description, getClass().getClassLoader());
+            this.classLoader = new PluginClassLoader(server, description, getClass().getClassLoader());
         } catch (MalformedURLException e) {
             throw new PluginContextException("Could not create classloader for plugin " + description.getName() + ": " + e.getMessage(), e);
         }
-    }
-
-    public PluginDescription getDescription() {
-        return description;
-    }
-
-    public PluginClassLoader getClassLoader() {
-        return classLoader;
     }
 
     void createMainClassInstance() throws PluginContextException {
@@ -36,7 +31,19 @@ public class PluginContext {
         }
     }
 
+    public PluginDescription getDescription() {
+        return description;
+    }
+
+    public PluginClassLoader getClassLoader() {
+        return classLoader;
+    }
+
     public Plugin getMainClassInstance() {
         return mainClassInstance;
+    }
+
+    public GlobalServer getServer() {
+        return server;
     }
 }

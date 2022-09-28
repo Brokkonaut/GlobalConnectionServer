@@ -1,33 +1,51 @@
 package de.cubeside.globalserver.plugin;
 
 import de.cubeside.globalserver.GlobalServer;
+import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class Plugin {
-    private GlobalServer server;
-    protected Logger logger;
+    private final GlobalServer server;
+    private final Logger logger;
+    private final PluginDescription description;
+    private final File dataFolder;
 
-    void initialize(GlobalServer server) {
-        this.server = server;
-        this.logger = LogManager.getLogger("Plugin(TODO)");
+    public Plugin() {
+        ClassLoader classLoader = getClass().getClassLoader();
+        if (classLoader instanceof PluginClassLoader pluginClassLoader) {
+            logger = LogManager.getLogger(pluginClassLoader.getPlugin().getName());
+            server = pluginClassLoader.getServer();
+            description = pluginClassLoader.getPlugin();
+            dataFolder = new File(server.getPluginFolder(), description.getName());
+        } else {
+            logger = LogManager.getLogger(getClass().getName());
+            logger.warn("Plugin " + getClass().getName() + " was not loaded by a PluginClassLoader");
+            server = null;
+            description = null;
+            dataFolder = new File("./plugindata");
+        }
     }
 
-    abstract public void onLoad(GlobalServer server);
+    public abstract void onLoad();
 
-    abstract public void onEnable();
+    public void onUnload() {
 
-    abstract public void onServerStarted();
+    }
 
-    abstract public void onDisable();
-
-    abstract public String getName();
-
-    public GlobalServer getServer() {
+    public final GlobalServer getServer() {
         return server;
     }
 
-    public Logger getLogger() {
+    public final Logger getLogger() {
         return logger;
+    }
+
+    public final PluginDescription getDescription() {
+        return description;
+    }
+
+    public File getDataFolder() {
+        return dataFolder;
     }
 }

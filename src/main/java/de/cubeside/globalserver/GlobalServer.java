@@ -15,6 +15,7 @@ import de.cubeside.globalserver.event.EventBus;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.cubeside.globalserver.plugin.PluginLoadException;
 import de.cubeside.globalserver.plugin.PluginManager;
+import de.cubeside.globalserver.plugin.PluginManagerWrapper;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -90,9 +91,11 @@ public class GlobalServer {
     private final Condition shutdownCondition = shutdownLock.newCondition();
 
     private final EventBus eventBus = new EventBus();
-    private HashMap<String, Plugin> plugins = new HashMap<>();
 
-    private PluginManager pluginManager;
+    private final PluginManagerWrapper pluginManagerWrapper;
+    private final PluginManager pluginManager;
+
+    private File pluginFolder;
 
     public GlobalServer() throws PluginLoadException {
         console = new JLineConsole(this);
@@ -140,10 +143,19 @@ public class GlobalServer {
         addCommand(new AccountAddAllowedChannelCommand());
         addCommand(new AccountRemoveAllowedChannelCommand());
 
-        File pluginFolder = new File("./plugins");
+        this.pluginFolder = new File("./plugins");
         pluginFolder.mkdirs();
-        pluginManager = new PluginManager(pluginFolder);
-        pluginManager.loadPlugins();
+        pluginManagerWrapper = new PluginManagerWrapper(this);
+        pluginManager = pluginManagerWrapper.getPluginManager();
+        pluginManagerWrapper.loadPlugins();
+        for (Plugin plugin : pluginManager.getPlugins()) {
+            LOGGER.info("Loading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
+            plugin.onLoad();
+        }
+    }
+
+    public File getPluginFolder() {
+        return pluginFolder;
     }
 
     public Collection<ServerCommand> getCommands() {
@@ -247,6 +259,12 @@ public class GlobalServer {
                 cc.closeConnection();
             }
             connections.clear();
+
+            for (Plugin plugin : pluginManager.getPlugins()) {
+                LOGGER.info("Unloading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
+                plugin.onUnload();
+            }
+            pluginManagerWrapper.shutdown();
 
             console.stop();
         } finally {

@@ -1,5 +1,6 @@
 package de.cubeside.globalserver.plugin;
 
+import com.vdurmont.semver4j.Requirement;
 import com.vdurmont.semver4j.Semver;
 import com.vdurmont.semver4j.Semver.SemverType;
 import com.vdurmont.semver4j.SemverException;
@@ -79,7 +80,7 @@ public class PluginDescription {
         if (depends instanceof List<?> l) {
             for (Object e : l) {
                 if (e instanceof String s) {
-                    dependencies.add(new PluginDependency(s, new String[] { "*" }, LoadOrder.BEFORE, Type.REQUIRED));
+                    dependencies.add(new PluginDependency(s, new Requirement[] { Requirement.buildNPM("*") }, LoadOrder.BEFORE, Type.REQUIRED));
                 }
             }
         }
@@ -90,7 +91,7 @@ public class PluginDescription {
         if (softdepends instanceof List<?> l) {
             for (Object e : l) {
                 if (e instanceof String s) {
-                    dependencies.add(new PluginDependency(s, new String[] { "*" }, LoadOrder.BEFORE, Type.OPTIONAL));
+                    dependencies.add(new PluginDependency(s, new Requirement[] { Requirement.buildNPM("*") }, LoadOrder.BEFORE, Type.OPTIONAL));
                 }
             }
         }
@@ -101,7 +102,7 @@ public class PluginDescription {
         if (loadbefore instanceof List<?> l) {
             for (Object e : l) {
                 if (e instanceof String s) {
-                    dependencies.add(new PluginDependency(s, new String[] { "*" }, LoadOrder.AFTER, Type.OPTIONAL));
+                    dependencies.add(new PluginDependency(s, new Requirement[] { Requirement.buildNPM("*") }, LoadOrder.AFTER, Type.OPTIONAL));
                 }
             }
         }

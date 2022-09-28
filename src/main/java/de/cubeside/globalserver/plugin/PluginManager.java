@@ -1,10 +1,16 @@
 package de.cubeside.globalserver.plugin;
 
+import com.vdurmont.semver4j.Requirement;
+import com.vdurmont.semver4j.Semver;
+import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.plugin.PluginDependency.LoadOrder;
 import de.cubeside.globalserver.plugin.PluginDependency.Type;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,21 +21,24 @@ import org.apache.logging.log4j.Logger;
 
 public class PluginManager {
     public final static Logger LOGGER = LogManager.getLogger("PluginManager");
-
     private static final Function<PluginContext, HashSet<PluginContext>> HASH_SET_CREATOR = (c) -> new HashSet<>();
-    private File pluginFolder;
 
-    public PluginManager(File pluginFolder) {
-        this.pluginFolder = pluginFolder;
+    private final GlobalServer server;
+    private LinkedHashMap<String, PluginContext> pluginContexts;
+    private Collection<Plugin> plugins;
+
+    PluginManager(GlobalServer server) {
+        this.server = server;
     }
 
-    public void loadPlugins() throws PluginLoadException {
+    void loadPlugins() throws PluginLoadException {
+        LOGGER.info("Resolving plugins..");
         LinkedHashMap<String, PluginContext> pluginContexts = new LinkedHashMap<>();
-        File[] pluginFiles = pluginFolder.listFiles(f -> f.isFile() && f.getName().endsWith(".jar"));
+        File[] pluginFiles = server.getPluginFolder().listFiles(f -> f.isFile() && f.getName().endsWith(".jar"));
         Arrays.sort(pluginFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));// guarantee a consistent load order
         for (File jarFile : pluginFiles) {
             PluginDescription description = new PluginDescription(jarFile);
-            if (pluginContexts.put(description.getName(), new PluginContext(description)) != null) {
+            if (pluginContexts.put(description.getName(), new PluginContext(server, description)) != null) {
                 throw new PluginLoadException("Duplicate plugin " + description.getName());
             }
         }
@@ -41,6 +50,17 @@ public class PluginManager {
             for (PluginDependency dependency : context.getDescription().getDependencies()) {
                 PluginContext resolvedDependency = pluginContexts.get(dependency.plugin());
                 if (resolvedDependency != null) {
+                    Semver dependencyVersion = resolvedDependency.getDescription().getVersion();
+                    boolean matchesAny = false;
+                    for (Requirement requiredVersion : dependency.version()) {
+                        if (dependencyVersion.satisfies(requiredVersion)) {
+                            matchesAny = true;
+                            break;
+                        }
+                    }
+                    if (!matchesAny) {
+                        throw new PluginLoadException("Plugin " + resolvedDependency.getDescription().getName() + " does not have the required version for " + context.getDescription().getName() + ": " + Arrays.toString(dependency.version()));
+                    }
                     addDependenciesRecursive(pluginContexts, dependencies, resolvedDependency, dependency.loadOrder(), context, allLoadBefore);
                 } else if (dependency.type() == Type.REQUIRED) {
                     throw new PluginLoadException("Plugin " + context.getDescription().getName() + " is missing the required dependency " + dependency.plugin());
@@ -54,7 +74,7 @@ public class PluginManager {
                     dependencyLoaders.add(otherContext.getClassLoader());
                 }
             }
-            // System.out.println("Dependencies for " + context.getDescription().getName() + " " + context.getDescription().getVersion() + ": " + dependencyLoaders.stream().map(d -> d.getPlugin().getName()).toList());
+            // LOGGER.info("Dependencies for " + context.getDescription().getName() + " " + context.getDescription().getVersion() + ": " + dependencyLoaders.stream().map(d -> d.getPlugin().getName()).toList());
             context.getClassLoader().setDependencyClassLoades(dependencyLoaders);
         }
 
@@ -86,9 +106,9 @@ public class PluginManager {
                 orderedIn.add(plugin);
                 newPluginContexts.put(plugin.getDescription().getName(), plugin);
                 it.remove();
-                // System.out.println(plugin.getDescription().getName());
             }
         }
+        // LOGGER.info("Plugin load order: " + newPluginContexts.keySet());
         pluginContexts = newPluginContexts;
 
         // start loading the plugins
@@ -100,7 +120,20 @@ public class PluginManager {
                 throw new PluginLoadException("Could not load the plugin " + context.getDescription().getName(), e);
             }
         }
+        this.pluginContexts = pluginContexts;
+        this.plugins = Collections.unmodifiableList(pluginContexts.values().stream().map(c -> c.getMainClassInstance()).toList());
+    }
 
+    void shutdown() {
+        if (this.pluginContexts != null) {
+            for (PluginContext context : this.pluginContexts.values()) {
+                try {
+                    context.getClassLoader().close();
+                } catch (IOException e) {
+                    LOGGER.error("Could not close ClassLoader for " + context.getDescription().getName(), e);
+                }
+            }
+        }
     }
 
     private void addDependenciesRecursive(HashMap<String, PluginContext> pluginContexts, HashSet<PluginContext> dependencies, PluginContext dependency, LoadOrder loadOrder, PluginContext initialPlugin, HashMap<PluginContext, HashSet<PluginContext>> allLoadBefore) {
@@ -119,5 +152,14 @@ public class PluginManager {
                 }
             }
         }
+    }
+
+    public Collection<Plugin> getPlugins() {
+        return plugins;
+    }
+
+    public Plugin getPlugin(String name) {
+        PluginContext context = pluginContexts.get(name);
+        return context != null ? context.getMainClassInstance() : null;
     }
 }

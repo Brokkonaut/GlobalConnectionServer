@@ -1,6 +1,8 @@
 package de.cubeside.globalserver.plugin;
 
-public record PluginDependency(String plugin, String[] version, LoadOrder loadOrder, Type type) {
+import com.vdurmont.semver4j.Requirement;
+
+public record PluginDependency(String plugin, Requirement[] version, LoadOrder loadOrder, Type type) {
     public enum LoadOrder {
         BEFORE,
         AFTER,

@@ -1,5 +1,6 @@
 package de.cubeside.globalserver.plugin;
 
+import de.cubeside.globalserver.GlobalServer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -11,10 +12,12 @@ public class PluginClassLoader extends URLClassLoader {
     }
 
     private final PluginDescription plugin;
+    private final GlobalServer server;
     private PluginClassLoader[] dependencyPluginClassLoaders;
 
-    public PluginClassLoader(PluginDescription plugin, ClassLoader parent) throws MalformedURLException {
+    public PluginClassLoader(GlobalServer server, PluginDescription plugin, ClassLoader parent) throws MalformedURLException {
         super(new URL[] { plugin.getJarFile().toURI().toURL() }, parent);
+        this.server = server;
         this.plugin = plugin;
     }
 
@@ -47,5 +50,9 @@ public class PluginClassLoader extends URLClassLoader {
 
     public PluginDescription getPlugin() {
         return plugin;
+    }
+
+    public GlobalServer getServer() {
+        return server;
     }
 }
