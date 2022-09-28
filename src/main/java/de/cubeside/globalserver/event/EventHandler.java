@@ -10,5 +10,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface EventHandler {
-    int priority() default Event.DEFAULT_PRIORITY;
+    int priority() default Priority.NORMAL;
 }
