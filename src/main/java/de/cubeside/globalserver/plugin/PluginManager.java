@@ -19,7 +19,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PluginManager {
+public final class PluginManager {
     public final static Logger LOGGER = LogManager.getLogger("PluginManager");
     private static final Function<PluginContext, HashSet<PluginContext>> HASH_SET_CREATOR = (c) -> new HashSet<>();
 
@@ -33,13 +33,19 @@ public class PluginManager {
 
     void loadPlugins() throws PluginLoadException {
         LOGGER.info("Resolving plugins..");
-        LinkedHashMap<String, PluginContext> pluginContexts = new LinkedHashMap<>();
         File[] pluginFiles = server.getPluginFolder().listFiles(f -> f.isFile() && f.getName().endsWith(".jar"));
-        Arrays.sort(pluginFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));// guarantee a consistent load order
+        ArrayList<PluginContext> loadedContexts = new ArrayList<>();
         for (File jarFile : pluginFiles) {
             PluginDescription description = new PluginDescription(jarFile);
-            if (pluginContexts.put(description.getName(), new PluginContext(server, description)) != null) {
-                throw new PluginLoadException("Duplicate plugin " + description.getName());
+            loadedContexts.add(new PluginContext(server, description));
+        }
+        // guarantee a consistent load order
+        loadedContexts.sort((f1, f2) -> f1.getDescription().getName().compareTo(f2.getDescription().getName()));
+
+        LinkedHashMap<String, PluginContext> pluginContexts = new LinkedHashMap<>();
+        for (PluginContext context : loadedContexts) {
+            if (pluginContexts.put(context.getDescription().getName(), context) != null) {
+                throw new PluginLoadException("Duplicate plugin " + context.getDescription().getName());
             }
         }
 

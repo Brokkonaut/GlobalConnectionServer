@@ -45,7 +45,7 @@ public abstract class Plugin {
         return description;
     }
 
-    public File getDataFolder() {
+    public final File getDataFolder() {
         return dataFolder;
     }
 }
