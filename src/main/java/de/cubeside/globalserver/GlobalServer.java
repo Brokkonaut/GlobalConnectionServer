@@ -12,6 +12,13 @@ import de.cubeside.globalserver.command.ListCommand;
 import de.cubeside.globalserver.command.ServersCommand;
 import de.cubeside.globalserver.command.StopCommand;
 import de.cubeside.globalserver.event.EventBus;
+import de.cubeside.globalserver.event.clientconnection.ClientConnectionDissolveEvent;
+import de.cubeside.globalserver.event.clientconnection.ClientConnectionEstablishedEvent;
+import de.cubeside.globalserver.event.globalserver.GlobalServerStartedEvent;
+import de.cubeside.globalserver.event.globalserver.GlobalServerStoppedEvent;
+import de.cubeside.globalserver.event.globalserver.GlobalServerStoppingEvent;
+import de.cubeside.globalserver.event.player.PlayerJoinedEvent;
+import de.cubeside.globalserver.event.player.PlayerQuitEvent;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.cubeside.globalserver.plugin.PluginLoadException;
 import de.cubeside.globalserver.plugin.PluginManager;
@@ -222,6 +229,12 @@ public class GlobalServer {
             LOGGER.error("Could not bind to " + port + ": " + e.getMessage());
             return;
         }
+        readLock.lock();
+        try {
+            getEventBus().dispatchEvent(new GlobalServerStartedEvent(this));
+        } finally {
+            readLock.unlock();
+        }
         while (true) {
             readLock.lock();
             try {
@@ -251,6 +264,8 @@ public class GlobalServer {
         try {
             listener.shutdown();
 
+            getEventBus().dispatchEvent(new GlobalServerStoppingEvent(this));
+
             for (ClientConnection cc : new ArrayList<>(pendingConnections)) {
                 cc.closeConnection();
             }
@@ -259,6 +274,8 @@ public class GlobalServer {
                 cc.closeConnection();
             }
             connections.clear();
+
+            getEventBus().dispatchEvent(new GlobalServerStoppedEvent(this));
 
             for (Plugin plugin : pluginManager.getPlugins()) {
                 LOGGER.info("Unloading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
@@ -339,6 +356,10 @@ public class GlobalServer {
                         cc.sendServerOffline(connection.getAccount());
                     }
                 }
+                for (OnlinePlayer player : connection.getPlayers()) {
+                    getEventBus().dispatchEvent(new PlayerQuitEvent(connection, player));
+                }
+                getEventBus().dispatchEvent(new ClientConnectionDissolveEvent(connection));
             }
         } finally {
             writeLock.unlock();
@@ -381,6 +402,7 @@ public class GlobalServer {
                     }
                 }
             }
+            getEventBus().dispatchEvent(new ClientConnectionEstablishedEvent(connection));
             return config;
         } finally {
             writeLock.unlock();
@@ -390,12 +412,14 @@ public class GlobalServer {
     void processPlayerOnline(ClientConnection connection, UUID uuid, String name, long joinTime) {
         writeLock.lock();
         try {
-            if (connection.addPlayer(uuid, name, joinTime)) {
+            OnlinePlayer joined = connection.addPlayer(uuid, name, joinTime);
+            if (joined != null) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
                         cc.sendPlayerOnline(connection.getAccount(), uuid, name, joinTime);
                     }
                 }
+                getEventBus().dispatchEvent(new PlayerJoinedEvent(connection, joined));
             }
         } finally {
             writeLock.unlock();
@@ -405,12 +429,14 @@ public class GlobalServer {
     void processPlayerOffline(ClientConnection connection, UUID uuid) {
         writeLock.lock();
         try {
-            if (connection.removePlayer(uuid)) {
+            OnlinePlayer player = connection.removePlayer(uuid);
+            if (player != null) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
                         cc.sendPlayerOffline(connection.getAccount(), uuid);
                     }
                 }
+                getEventBus().dispatchEvent(new PlayerQuitEvent(connection, player));
             }
         } finally {
             writeLock.unlock();

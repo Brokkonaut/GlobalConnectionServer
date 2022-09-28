@@ -205,16 +205,17 @@ public class ClientConnection extends Thread {
         this.client = client;
     }
 
-    public boolean addPlayer(UUID uuid, String name, long joinTime) {
+    public OnlinePlayer addPlayer(UUID uuid, String name, long joinTime) {
         if (playersOnline.containsKey(uuid)) {
-            return false;
+            return null;
         }
-        playersOnline.put(uuid, new OnlinePlayer(uuid, name, joinTime));
-        return true;
+        OnlinePlayer joined = new OnlinePlayer(uuid, name, joinTime);
+        playersOnline.put(uuid, joined);
+        return joined;
     }
 
-    public boolean removePlayer(UUID uuid) {
-        return playersOnline.remove(uuid) != null;
+    public OnlinePlayer removePlayer(UUID uuid) {
+        return playersOnline.remove(uuid);
     }
 
     public boolean hasPlayer(UUID uuid) {
@@ -383,5 +384,9 @@ public class ClientConnection extends Thread {
                 }
             }
         }
+    }
+
+    public OnlinePlayer getPlayer(UUID uuid) {
+        return playersOnline.get(uuid);
     }
 }
