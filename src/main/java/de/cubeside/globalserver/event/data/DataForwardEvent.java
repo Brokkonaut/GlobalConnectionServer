@@ -10,13 +10,13 @@ public class DataForwardEvent extends ClientConnectionEvent {
     private HashSet<ClientConnection> targets;
     private String channel;
     private UUID targetUuid;
-    private String targetServer;
+    private ClientConnection targetServer;
     private byte[] data;
     private boolean allowRestricted;
     private boolean toAllUnrestrictedServers;
     private boolean cancelled = false;
 
-    public DataForwardEvent(ClientConnection source, HashSet<ClientConnection> targets, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
+    public DataForwardEvent(ClientConnection source, HashSet<ClientConnection> targets, String channel, UUID targetUuid, ClientConnection targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
         super(source);
         this.targets = targets;
         this.channel = channel;
@@ -61,11 +61,11 @@ public class DataForwardEvent extends ClientConnectionEvent {
         this.targetUuid = targetUuid;
     }
 
-    public String getTargetServer() {
+    public ClientConnection getTargetServer() {
         return targetServer;
     }
 
-    public void setTargetServer(String targetServer) {
+    public void setTargetServer(ClientConnection targetServer) {
         this.targetServer = targetServer;
     }
 

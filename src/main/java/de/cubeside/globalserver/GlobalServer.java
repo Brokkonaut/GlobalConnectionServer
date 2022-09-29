@@ -80,6 +80,7 @@ public class GlobalServer {
     private ArrayList<ClientConnection> pendingConnections;
 
     private ArrayList<ClientConnection> connections;
+    private HashMap<String, ClientConnection> connectionsByAccount;
 
     private ConcurrentHashMap<String, ServerCommand> commands;
 
@@ -137,6 +138,7 @@ public class GlobalServer {
         }
         pendingConnections = new ArrayList<>();
         connections = new ArrayList<>();
+        connectionsByAccount = new HashMap<>();
         commands = new ConcurrentHashMap<>();
 
         addCommand(new HelpCommand());
@@ -215,6 +217,10 @@ public class GlobalServer {
         return Collections.unmodifiableList(connections);
     }
 
+    public ClientConnection getConnection(String account) {
+        return connectionsByAccount.get(account);
+    }
+
     void run() {
         running = true;
         int port = serverConfig.getPort();
@@ -275,6 +281,7 @@ public class GlobalServer {
                 cc.closeConnection();
             }
             connections.clear();
+            connectionsByAccount.clear();
 
             getEventBus().dispatchEvent(new GlobalServerStoppedEvent(this));
 
@@ -352,6 +359,7 @@ public class GlobalServer {
             boolean wasOnline = connections.remove(connection);
             pendingConnections.remove(connection);
             if (wasOnline) {
+                connectionsByAccount.remove(connection.getAccount());
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
                         cc.sendServerOffline(connection.getAccount());
@@ -391,6 +399,7 @@ public class GlobalServer {
 
             pendingConnections.remove(connection);
             connections.add(connection);
+            connectionsByAccount.put(connection.getAccount(), connection);
             connection.sendLoginResultAndActivateEncryption(true, config);
             // send online servers
             for (ClientConnection cc : connections) {
@@ -448,13 +457,14 @@ public class GlobalServer {
         readLock.lock();
         try {
             HashSet<ClientConnection> targets = new HashSet<>();
+            ClientConnection targetServerConnection = targetServer == null ? null : connectionsByAccount.get(targetServer);
             boolean fromRestricted = connection.getClient().isRestricted();
             if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
                         boolean toRestricted = cc.getClient().isRestricted();
                         if (!toRestricted || cc.getClient().getAllowedChannels().contains(channel)) {
-                            boolean explicitServer = targetServer != null && cc.getAccount().equals(targetServer);
+                            boolean explicitServer = cc == targetServerConnection;
                             if (targetServer == null || explicitServer) {
                                 boolean explicitPlayer = targetUuid != null && cc.hasPlayer(targetUuid);
                                 if (toAllUnrestrictedServers || targetUuid == null || explicitPlayer) {
@@ -467,17 +477,27 @@ public class GlobalServer {
                     }
                 }
             }
-            DataForwardEvent event = new DataForwardEvent(connection, targets, channel, targetUuid, targetServer, data, allowRestricted, toAllUnrestrictedServers);
+            DataForwardEvent event = new DataForwardEvent(connection, targets, channel, targetUuid, targetServerConnection, data, allowRestricted, toAllUnrestrictedServers);
             getEventBus().dispatchEvent(event);
             if (!event.isCancelled()) {
                 channel = event.getChannel();
                 targetUuid = event.getTargetUuid();
-                targetServer = event.getTargetServer();
+                targetServerConnection = event.getTargetServer();
+
                 data = event.getData();
                 for (ClientConnection target : event.getTargets()) {
-                    target.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+                    target.sendData(connection, channel, targetUuid, targetServerConnection, data);
                 }
             }
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public void runWithReadLock(Runnable r) {
+        readLock.lock();
+        try {
+            r.run();
         } finally {
             readLock.unlock();
         }

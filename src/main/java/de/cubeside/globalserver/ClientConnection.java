@@ -359,12 +359,18 @@ public class ClientConnection extends Thread {
         }
     }
 
-    public void sendData(String server, String channel, UUID targetUuid, String targetServer, byte[] data) {
+    public void sendData(ClientConnection fromServer, String channel, UUID targetUuid, ClientConnection targetServer, byte[] data) {
+        if (fromServer == null) {
+            throw new NullPointerException("fromServer");
+        }
+        if (channel == null) {
+            throw new NullPointerException("channel");
+        }
         synchronized (this) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.DATA.ordinal());
-                    os.writeUTF(server);
+                    os.writeUTF(fromServer.getAccount());
                     os.writeUTF(channel);
                     int flags = (targetUuid != null ? 1 : 0) + (targetServer != null ? 2 : 0);
                     os.writeByte(flags);
@@ -373,7 +379,7 @@ public class ClientConnection extends Thread {
                         os.writeLong(targetUuid.getLeastSignificantBits());
                     }
                     if (targetServer != null) {
-                        os.writeUTF(targetServer);
+                        os.writeUTF(targetServer.getAccount());
                     }
                     os.writeInt(data.length);
                     os.write(data);
