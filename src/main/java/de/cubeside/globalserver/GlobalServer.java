@@ -9,6 +9,7 @@ import de.cubeside.globalserver.command.AccountsCommand;
 import de.cubeside.globalserver.command.CreateAccountCommand;
 import de.cubeside.globalserver.command.HelpCommand;
 import de.cubeside.globalserver.command.ListCommand;
+import de.cubeside.globalserver.command.PluginsCommand;
 import de.cubeside.globalserver.command.ServersCommand;
 import de.cubeside.globalserver.command.StopCommand;
 import de.cubeside.globalserver.event.EventBus;
@@ -152,6 +153,8 @@ public class GlobalServer {
         addCommand(new AccountSetRestrictedCommand());
         addCommand(new AccountAddAllowedChannelCommand());
         addCommand(new AccountRemoveAllowedChannelCommand());
+        addCommand(new PluginsCommand());
+        addCommand("pl", new PluginsCommand());
 
         this.pluginFolder = new File("./plugins");
         pluginFolder.mkdirs();
@@ -181,7 +184,11 @@ public class GlobalServer {
     }
 
     public void addCommand(ServerCommand command) {
-        commands.put(command.getCommand().toLowerCase().trim(), command);
+        addCommand(command.getCommand(), command);
+    }
+
+    public void addCommand(String commandString, ServerCommand command) {
+        commands.put(commandString.toLowerCase().trim(), command);
     }
 
     public void addAccount(String login, String password) {
@@ -513,5 +520,9 @@ public class GlobalServer {
 
     public EventBus getEventBus() {
         return eventBus;
+    }
+
+    public PluginManager getPluginManager() {
+        return pluginManager;
     }
 }
