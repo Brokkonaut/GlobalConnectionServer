@@ -14,6 +14,7 @@ import de.cubeside.globalserver.command.StopCommand;
 import de.cubeside.globalserver.event.EventBus;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionDissolveEvent;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionEstablishedEvent;
+import de.cubeside.globalserver.event.data.DataForwardEvent;
 import de.cubeside.globalserver.event.globalserver.GlobalServerStartedEvent;
 import de.cubeside.globalserver.event.globalserver.GlobalServerStoppedEvent;
 import de.cubeside.globalserver.event.globalserver.GlobalServerStoppingEvent;
@@ -446,6 +447,7 @@ public class GlobalServer {
     void processData(ClientConnection connection, String channel, UUID targetUuid, String targetServer, byte[] data, boolean allowRestricted, boolean toAllUnrestrictedServers) {
         readLock.lock();
         try {
+            HashSet<ClientConnection> targets = new HashSet<>();
             boolean fromRestricted = connection.getClient().isRestricted();
             if (!fromRestricted || connection.getClient().getAllowedChannels().contains(channel)) {
                 for (ClientConnection cc : connections) {
@@ -457,12 +459,23 @@ public class GlobalServer {
                                 boolean explicitPlayer = targetUuid != null && cc.hasPlayer(targetUuid);
                                 if (toAllUnrestrictedServers || targetUuid == null || explicitPlayer) {
                                     if (allowRestricted || (!fromRestricted && !toRestricted) || explicitServer || explicitPlayer) {
-                                        cc.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
+                                        targets.add(cc);
                                     }
                                 }
                             }
                         }
                     }
+                }
+            }
+            DataForwardEvent event = new DataForwardEvent(connection, targets, channel, targetUuid, targetServer, data, allowRestricted, toAllUnrestrictedServers);
+            getEventBus().dispatchEvent(event);
+            if (!event.isCancelled()) {
+                channel = event.getChannel();
+                targetUuid = event.getTargetUuid();
+                targetServer = event.getTargetServer();
+                data = event.getData();
+                for (ClientConnection target : event.getTargets()) {
+                    target.sendData(connection.getAccount(), channel, targetUuid, targetServer, data);
                 }
             }
         } finally {
