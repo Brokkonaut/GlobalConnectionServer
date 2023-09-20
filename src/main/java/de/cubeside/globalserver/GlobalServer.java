@@ -44,6 +44,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -107,11 +110,14 @@ public class GlobalServer {
 
     private File pluginFolder;
 
+    private final ExecutorService executor;
+
     public GlobalServer() throws PluginLoadException {
         console = new JLineConsole(this);
 
         LOGGER.info("Starting GlobalServer...");
 
+        executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 300L, TimeUnit.SECONDS, new SynchronousQueue<>());
         Constructor constructor = new Constructor(ServerConfig.class);
         TypeDescription serverConfigDescription = new TypeDescription(ServerConfig.class);
         serverConfigDescription.addPropertyParameters("clientConfigs", ClientConfig.class);
@@ -295,6 +301,20 @@ public class GlobalServer {
             for (Plugin plugin : pluginManager.getPlugins()) {
                 LOGGER.info("Unloading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
                 plugin.onUnload();
+            }
+            executor.shutdown();
+            try {
+                // wait 1 second without info, only print a message if this was not enough
+                if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    LOGGER.info("Waiting 60 seconds for all async tasks to finish...");
+                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        LOGGER.warn("Not all tasks were completed before unloading!");
+                    } else {
+                        LOGGER.info("All tasks have finished executing!");
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             pluginManagerWrapper.shutdown();
 
@@ -524,5 +544,9 @@ public class GlobalServer {
 
     public PluginManager getPluginManager() {
         return pluginManager;
+    }
+
+    public ExecutorService getExecutor() {
+        return executor;
     }
 }
