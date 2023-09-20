@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.io.IoBuilder;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -118,7 +119,10 @@ public class GlobalServer {
         LOGGER.info("Starting GlobalServer...");
 
         executor = new ThreadPoolExecutor(1, Integer.MAX_VALUE, 300L, TimeUnit.SECONDS, new SynchronousQueue<>());
-        Constructor constructor = new Constructor(ServerConfig.class);
+        LoaderOptions loaderOptions = new LoaderOptions();
+        loaderOptions.setCodePointLimit(Integer.MAX_VALUE);
+        loaderOptions.setNestingDepthLimit(Integer.MAX_VALUE);
+        Constructor constructor = new Constructor(ServerConfig.class, loaderOptions);
         TypeDescription serverConfigDescription = new TypeDescription(ServerConfig.class);
         serverConfigDescription.addPropertyParameters("clientConfigs", ClientConfig.class);
         constructor.addTypeDescription(serverConfigDescription);

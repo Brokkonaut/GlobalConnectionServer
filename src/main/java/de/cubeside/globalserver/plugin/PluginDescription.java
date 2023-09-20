@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
@@ -39,7 +40,10 @@ public class PluginDescription {
             if (pluginYmlEntry == null) {
                 throw new PluginDescriptionException("The plugin jar " + jarFile.getName() + " does not contain a plugin.yml");
             }
-            root = new Yaml(new SafeConstructor()).load(new InputStreamReader(new BufferedInputStream(jarJarFile.getInputStream(pluginYmlEntry)), StandardCharsets.UTF_8));
+            LoaderOptions loaderOptions = new LoaderOptions();
+            loaderOptions.setCodePointLimit(Integer.MAX_VALUE);
+            loaderOptions.setNestingDepthLimit(Integer.MAX_VALUE);
+            root = new Yaml(new SafeConstructor(loaderOptions)).load(new InputStreamReader(new BufferedInputStream(jarJarFile.getInputStream(pluginYmlEntry)), StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new PluginDescriptionException("Could not load plugin jar " + jarFile.getName() + ": " + e.getMessage(), e);
         } catch (YAMLException e) {

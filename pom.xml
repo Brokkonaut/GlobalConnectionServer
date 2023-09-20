@@ -6,9 +6,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <build.number>DEV</build.number>
-        <log4j.version>2.17.1</log4j.version>
-        <jline.version>3.21.0</jline.version>
-        <snakeyaml.version>1.32</snakeyaml.version>
+        <log4j.version>2.20.0</log4j.version>
+        <jline.version>3.23.0</jline.version>
+        <snakeyaml.version>2.2</snakeyaml.version>
     </properties>
     <repositories></repositories>
     <dependencies>
