@@ -1,5 +1,6 @@
 package de.cubeside.globalserver;
 
+import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.Collection;
 
 public abstract class ServerCommand {

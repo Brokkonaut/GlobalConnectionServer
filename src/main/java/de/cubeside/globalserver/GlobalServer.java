@@ -25,6 +25,7 @@ import de.cubeside.globalserver.plugin.Plugin;
 import de.cubeside.globalserver.plugin.PluginLoadException;
 import de.cubeside.globalserver.plugin.PluginManager;
 import de.cubeside.globalserver.plugin.PluginManagerWrapper;
+import de.iani.cubesideutils.commands.ArgsParser;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

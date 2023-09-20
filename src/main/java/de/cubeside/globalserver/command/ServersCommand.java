@@ -1,9 +1,9 @@
 package de.cubeside.globalserver.command;
 
-import de.cubeside.globalserver.ArgsParser;
 import de.cubeside.globalserver.ClientConnection;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
+import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 import java.util.List;
 
