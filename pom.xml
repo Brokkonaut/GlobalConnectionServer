@@ -35,6 +35,11 @@
             <version>${log4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${snakeyaml.version}</version>
@@ -94,17 +99,18 @@
                 </configuration>
                 <executions>
                     <execution>
-                      <id>log4j-plugin-processor</id>
-                      <goals>
-                        <goal>compile</goal>
-                      </goals>
-                      <phase>process-classes</phase>
-                      <configuration>
-                        <proc>only</proc>
-                        <annotationProcessors>
-                          <annotationProcessor>org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor</annotationProcessor>
-                        </annotationProcessors>
-                      </configuration>
+                        <id>log4j-plugin-processor</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                        <configuration>
+                            <proc>only</proc>
+                            <annotationProcessors>
+                                <annotationProcessor>
+                                    org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor</annotationProcessor>
+                            </annotationProcessors>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -129,16 +135,17 @@
                                     </manifestEntries>
                                 </transformer>
                                 <transformer
-                                    implementation="io.github.edwgiz.log4j.maven.plugins.shade.transformer.Log4j2PluginCacheFileTransformer"></transformer>
+                                    implementation="org.apache.logging.log4j.maven.plugins.shade.transformer.Log4j2PluginCacheFileTransformer"></transformer>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>io.github.edwgiz</groupId>
-                        <artifactId>log4j-maven-shade-plugin-extensions</artifactId>
-                        <version>${log4j.version}</version>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>
+                            log4j-transform-maven-shade-plugin-extensions</artifactId>
+                        <version>0.1.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
