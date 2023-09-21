@@ -24,6 +24,7 @@ public class JLineConsole implements ConsoleImpl {
     private GlobalServer server;
     private SimpleConsoleReaderThread thread;
     private volatile boolean running;
+    private Terminal terminal;
     private LineReader lineReader;
 
     public JLineConsole(GlobalServer server) {
@@ -32,7 +33,7 @@ public class JLineConsole implements ConsoleImpl {
 
         logger.log(Level.INFO, "Starting console...");
         try {
-            Terminal terminal = TerminalBuilder.builder().build();
+            terminal = TerminalBuilder.builder().build();
             lineReader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .history(new DefaultHistory())
@@ -59,6 +60,16 @@ public class JLineConsole implements ConsoleImpl {
     @Override
     public void stop() {
         running = false;
+        if (terminal != null) {
+            try {
+                terminal.close();
+            } catch (IOException e) {
+                logger.error("Exception while closing the console", e);
+            }
+            if (thread != null) {
+                thread.interrupt();
+            }
+        }
     }
 
     private class ConsoleCompleter implements Completer {
