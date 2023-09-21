@@ -174,7 +174,11 @@ public class GlobalServer {
         pluginManagerWrapper.loadPlugins();
         for (Plugin plugin : pluginManager.getPlugins()) {
             LOGGER.info("Starting plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
-            plugin.onLoad();
+            try {
+                plugin.onLoad();
+            } catch (Throwable t) {
+                LOGGER.error("Exception while starting plugin " + plugin.getDescription().getName(), t);
+            }
         }
     }
 
@@ -305,7 +309,11 @@ public class GlobalServer {
 
             for (Plugin plugin : pluginManager.getPlugins()) {
                 LOGGER.info("Unloading plugin " + plugin.getDescription().getName() + " " + plugin.getDescription().getVersion());
-                plugin.onUnload();
+                try {
+                    plugin.onUnload();
+                } catch (Throwable t) {
+                    LOGGER.error("Exception while unloading plugin " + plugin.getDescription().getName(), t);
+                }
             }
             executor.shutdown();
             try {
@@ -358,6 +366,8 @@ public class GlobalServer {
             readLock.lock();
             try {
                 command.execute(this, new ArgsParser(splitArgs.toArray(new String[splitArgs.size()])));
+            } catch (Throwable t) {
+                LOGGER.error("Could not execute command " + line, t);
             } finally {
                 readLock.unlock();
             }
