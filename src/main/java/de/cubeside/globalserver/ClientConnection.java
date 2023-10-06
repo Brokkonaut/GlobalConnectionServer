@@ -44,6 +44,7 @@ public class ClientConnection extends Thread {
     private String account;
     private ClientConfig client;
     private HashMap<UUID, OnlinePlayer> playersOnline;
+    private final Object sendSync = new Object();
 
     public ClientConnection(GlobalServer server, Socket socket) {
         this.server = server;
@@ -233,7 +234,9 @@ public class ClientConnection extends Thread {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(randomNumberServer);
-            digest.update(config.getPassword().getBytes(StandardCharsets.UTF_8));
+            if (config != null) {
+                digest.update(config.getPassword().getBytes(StandardCharsets.UTF_8));
+            }
             digest.update(randomNumberClient);
             secret = digest.digest();
         } catch (NoSuchAlgorithmException e) {
@@ -270,7 +273,7 @@ public class ClientConnection extends Thread {
     }
 
     public void sendPing() {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PING.ordinal());
@@ -283,7 +286,7 @@ public class ClientConnection extends Thread {
     }
 
     private void sendPong() {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PONG.ordinal());
@@ -296,7 +299,7 @@ public class ClientConnection extends Thread {
     }
 
     public void sendServerOnline(String server) {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.SERVER_ONLINE.ordinal());
@@ -311,7 +314,7 @@ public class ClientConnection extends Thread {
     }
 
     public void sendServerOffline(String server) {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.SERVER_OFFLINE.ordinal());
@@ -325,7 +328,7 @@ public class ClientConnection extends Thread {
     }
 
     public void sendPlayerOnline(String server, UUID uuid, String name, long joinTime) {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PLAYER_ONLINE.ordinal());
@@ -344,7 +347,7 @@ public class ClientConnection extends Thread {
     }
 
     public void sendPlayerOffline(String server, UUID uuid) {
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.PLAYER_OFFLINE.ordinal());
@@ -366,7 +369,7 @@ public class ClientConnection extends Thread {
         if (channel == null) {
             throw new NullPointerException("channel");
         }
-        synchronized (this) {
+        synchronized (sendSync) {
             if (os != null) {
                 try {
                     os.writeByte(ServerPacketType.DATA.ordinal());
