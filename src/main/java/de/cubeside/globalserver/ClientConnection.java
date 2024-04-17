@@ -369,6 +369,9 @@ public class ClientConnection extends Thread {
         if (channel == null) {
             throw new NullPointerException("channel");
         }
+        if (data == null) {
+            throw new NullPointerException("data");
+        }
         synchronized (sendSync) {
             if (os != null) {
                 try {
