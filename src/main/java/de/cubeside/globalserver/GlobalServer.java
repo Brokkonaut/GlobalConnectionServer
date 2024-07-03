@@ -1,5 +1,6 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.commands.ServerCommand;
 import de.cubeside.globalserver.commands.builtin.HelpCommand;
 import de.cubeside.globalserver.commands.builtin.ListCommand;
 import de.cubeside.globalserver.commands.builtin.PluginsCommand;

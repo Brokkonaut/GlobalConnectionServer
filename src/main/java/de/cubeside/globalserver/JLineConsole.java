@@ -1,5 +1,6 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.commands.ServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.io.IOException;
 import java.util.Collection;

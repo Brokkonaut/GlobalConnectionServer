@@ -2,7 +2,7 @@ package de.cubeside.globalserver.commands.builtin.account;
 
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.commands.ServerCommand;
 import de.cubeside.globalserver.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;

@@ -1,8 +1,8 @@
 package de.cubeside.globalserver.commands.builtin;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
 import de.cubeside.globalserver.commands.AbstractServerCommand;
+import de.cubeside.globalserver.commands.ServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.Collection;
 

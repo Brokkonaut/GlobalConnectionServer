@@ -1,6 +1,5 @@
 package de.cubeside.globalserver.commands;
 
-import de.cubeside.globalserver.ServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import de.iani.cubesideutils.commands.PermissionRequirer;
 import java.util.Collection;

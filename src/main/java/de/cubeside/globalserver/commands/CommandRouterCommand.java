@@ -1,7 +1,6 @@
 package de.cubeside.globalserver.commands;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
 import de.iani.cubesideutils.Pair;
 import de.iani.cubesideutils.StringUtilCore;
 import de.iani.cubesideutils.commands.AbstractCommandRouter;
