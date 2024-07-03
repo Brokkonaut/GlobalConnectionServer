@@ -226,13 +226,16 @@ public class GlobalServer {
             if (!clientConfigs.containsKey(login)) {
                 throw new IllegalArgumentException("Account does not exist: " + login);
             }
+            ClientConnection connection = connectionsByAccount.get(login);
+            if (connection != null) {
+                connection.closeConnection();
+            }
             clientConfigs.remove(login);
             serverConfig.getClientConfigs().removeIf(cfg -> cfg.getLogin().equals(login));
             saveConfig();
         } finally {
             dataLock.unlock();
         }
-        // TODO kick client (but not under lock conditions!)
     }
 
     public void saveConfig() {
