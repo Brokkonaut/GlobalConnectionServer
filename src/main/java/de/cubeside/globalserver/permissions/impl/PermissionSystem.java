@@ -1,4 +1,4 @@
-package de.cubeside.globalserver.permissions;
+package de.cubeside.globalserver.permissions.impl;
 
 import de.cubeside.globalserver.utils.Preconditions;
 import java.util.ArrayDeque;
@@ -101,15 +101,6 @@ public class PermissionSystem {
         }
 
         void commit() {
-            Iterator<CalculatedUserPermissions> it2 = calculatedUserPerms.values().iterator();
-            while (it2.hasNext()) {
-                CalculatedUserPermissions perms = it2.next();
-                if (perms.getUseCounter() == 0) {
-                    it2.remove();
-                } else {
-                    perms.calculate(editorGroups, removedGroups.isEmpty() && newGroups.isEmpty());
-                }
-            }
             for (PermissionGroup group : editorGroups.values()) {
                 group.commitPermissionUpdates(editorGroups);
             }
@@ -119,6 +110,15 @@ public class PermissionSystem {
                 PermissionGroup group = it.next();
                 if (!editorGroups.containsKey(group.getName())) {
                     it.remove();
+                }
+            }
+            Iterator<CalculatedUserPermissions> it2 = calculatedUserPerms.values().iterator();
+            while (it2.hasNext()) {
+                CalculatedUserPermissions perms = it2.next();
+                if (perms.getUseCounter() == 0) {
+                    it2.remove();
+                } else {
+                    perms.calculate(groups, removedGroups.isEmpty() && newGroups.isEmpty());
                 }
             }
         }

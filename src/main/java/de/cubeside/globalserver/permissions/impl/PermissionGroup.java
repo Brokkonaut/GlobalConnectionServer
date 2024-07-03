@@ -1,4 +1,4 @@
-package de.cubeside.globalserver.permissions;
+package de.cubeside.globalserver.permissions.impl;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
