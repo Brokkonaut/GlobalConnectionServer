@@ -77,7 +77,7 @@ public class GlobalServer {
     private Yaml configYaml;
     private ServerConfig serverConfig;
 
-    private HashMap<String, ClientConfig> clientConfigs;
+    private ConcurrentHashMap<String, ClientConfig> clientConfigs;
 
     private ArrayList<ClientConnection> pendingConnections;
 
@@ -86,15 +86,19 @@ public class GlobalServer {
 
     private ConcurrentHashMap<String, ServerCommand> commands;
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    /**
-     * Required when a server is added/removed or a player is added/removed
-     */
-    private final Lock readLock = lock.readLock();
+    private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     /**
      * Required when a command is executed/tab completed or data is sent
      */
-    private final Lock writeLock = lock.writeLock();
+    private final Lock readLock = readWriteLock.readLock();
+    /**
+     * Required when a server is added/removed or a player is added/removed
+     */
+    private final Lock writeLock = readWriteLock.writeLock();
+    /**
+     * Required when data is modified and there is no writeLock. It has to be aquired under readLock and is not allowed to aquire other locks from there
+     */
+    private final Lock dataLock = new ReentrantLock();
     /**
      * Used when accessing the field "running" and when waiting for/signaling the shutdownCondition
      */
@@ -142,7 +146,7 @@ public class GlobalServer {
                 saveConfig();
             }
         }
-        clientConfigs = new HashMap<>();
+        clientConfigs = new ConcurrentHashMap<>();
         for (ClientConfig cc : serverConfig.getClientConfigs()) {
             clientConfigs.put(cc.getLogin(), cc);
         }
@@ -199,23 +203,49 @@ public class GlobalServer {
     }
 
     public void addAccount(String login, String password) {
-        Objects.requireNonNull(login, "login must not be null");
-        Objects.requireNonNull(password, "password must not be null");
-        if (clientConfigs.containsKey(login)) {
-            throw new IllegalArgumentException("Login name in use: " + login);
+        dataLock.lock();
+        try {
+            Objects.requireNonNull(login, "login must not be null");
+            Objects.requireNonNull(password, "password must not be null");
+            if (clientConfigs.containsKey(login)) {
+                throw new IllegalArgumentException("Login name in use: " + login);
+            }
+            ClientConfig cfg = new ClientConfig(login, password, false, new HashSet<>());
+            clientConfigs.put(login, cfg);
+            serverConfig.getClientConfigs().add(cfg);
+            saveConfig();
+        } finally {
+            dataLock.unlock();
         }
-        ClientConfig cfg = new ClientConfig(login, password, false, new HashSet<>());
-        clientConfigs.put(login, cfg);
-        serverConfig.getClientConfigs().add(cfg);
-        saveConfig();
+    }
+
+    public void removeAccount(String login) {
+        dataLock.lock();
+        try {
+            Objects.requireNonNull(login, "login must not be null");
+            if (!clientConfigs.containsKey(login)) {
+                throw new IllegalArgumentException("Account does not exist: " + login);
+            }
+            clientConfigs.remove(login);
+            serverConfig.getClientConfigs().removeIf(cfg -> cfg.getLogin().equals(login));
+            saveConfig();
+        } finally {
+            dataLock.unlock();
+        }
+        // TODO kick client (but not under lock conditions!)
     }
 
     public void saveConfig() {
-        String output = configYaml.dumpAsMap(serverConfig);
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFile), Charset.forName("UTF-8")))) {
-            writer.write(output);
-        } catch (Exception e) {
-            LOGGER.error("Could not save config!", e);
+        dataLock.lock();
+        try {
+            String output = configYaml.dumpAsMap(serverConfig);
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(configFile), Charset.forName("UTF-8")))) {
+                writer.write(output);
+            } catch (Exception e) {
+                LOGGER.error("Could not save config!", e);
+            }
+        } finally {
+            dataLock.unlock();
         }
     }
 
@@ -237,21 +267,21 @@ public class GlobalServer {
 
     void run() {
         running = true;
-        int port = serverConfig.getPort();
-        if (port <= 0) {
-            port = 25701;
-            serverConfig.setPort(port);
-            saveConfig();
-        }
-        try {
-            listener = new ServerListener(this, port);
-            listener.start();
-        } catch (IOException e) {
-            LOGGER.error("Could not bind to " + port + ": " + e.getMessage());
-            return;
-        }
         readLock.lock();
         try {
+            int port = serverConfig.getPort();
+            if (port <= 0) {
+                port = 25701;
+                serverConfig.setPort(port);
+                saveConfig();
+            }
+            try {
+                listener = new ServerListener(this, port);
+                listener.start();
+            } catch (IOException e) {
+                LOGGER.error("Could not bind to " + port + ": " + e.getMessage());
+                return;
+            }
             getEventBus().dispatchEvent(new GlobalServerStartedEvent(this));
         } finally {
             readLock.unlock();
