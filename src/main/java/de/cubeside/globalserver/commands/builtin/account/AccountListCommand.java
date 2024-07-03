@@ -8,14 +8,8 @@ import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 
 public class AccountListCommand extends SubCommand {
-    private GlobalServer server;
-
-    public AccountListCommand(GlobalServer server) {
-        this.server = server;
-    }
-
     @Override
-    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
+    public boolean onCommand(GlobalServer server, ServerCommand command, String commandString, ArgsParser args) {
         StringBuilder sb = new StringBuilder();
         ArrayList<ClientConfig> accounts = new ArrayList<>(server.getAccounts());
         accounts.sort((a1, a2) -> a1.getLogin().compareTo(a2.getLogin()));

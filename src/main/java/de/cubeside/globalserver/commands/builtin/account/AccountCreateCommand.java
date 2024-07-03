@@ -7,19 +7,13 @@ import de.iani.cubesideutils.commands.ArgsParser;
 import java.security.SecureRandom;
 
 public class AccountCreateCommand extends SubCommand {
-    private GlobalServer server;
-
-    public AccountCreateCommand(GlobalServer server) {
-        this.server = server;
-    }
-
     @Override
     public String getUsage() {
         return "<account>";
     }
 
     @Override
-    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
+    public boolean onCommand(GlobalServer server, ServerCommand command, String commandString, ArgsParser args) {
         if (args.remaining() != 1) {
             return false;
         }

@@ -556,4 +556,8 @@ public class GlobalServer {
     public ExecutorService getExecutor() {
         return executor;
     }
+
+    public GlobalPermissions getGlobalPermissions() {
+        return globalPermissions;
+    }
 }

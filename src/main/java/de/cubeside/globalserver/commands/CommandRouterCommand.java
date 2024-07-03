@@ -48,7 +48,7 @@ public class CommandRouterCommand extends AbstractCommandRouter<SubCommand, Void
         List<String> optionsList = null;
         // get tabcomplete options from command
         if (currentMap.executor != null) {
-            options = currentMap.executor.onTabComplete(this, new ArgsParser(args, nr));
+            options = currentMap.executor.onTabComplete(server, this, new ArgsParser(args, nr));
         } else {
             options = Collections.emptyList();
         }
@@ -85,7 +85,7 @@ public class CommandRouterCommand extends AbstractCommandRouter<SubCommand, Void
         // execute this?
         SubCommand toExecute = currentMap.executor;
         if (toExecute != null) {
-            if (toExecute.onCommand(this, getCommandString(currentMap), new ArgsParser(args, nr))) {
+            if (toExecute.onCommand(server, this, getCommandString(currentMap), new ArgsParser(args, nr))) {
                 return;
             } else {
                 showHelp(args);

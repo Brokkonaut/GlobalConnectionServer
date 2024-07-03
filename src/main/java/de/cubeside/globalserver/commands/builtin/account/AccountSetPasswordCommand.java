@@ -9,19 +9,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class AccountSetPasswordCommand extends SubCommand {
-    private GlobalServer server;
-
-    public AccountSetPasswordCommand(GlobalServer server) {
-        this.server = server;
-    }
-
     @Override
     public String getUsage() {
         return "<account>";
     }
 
     @Override
-    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
+    public boolean onCommand(GlobalServer server, ServerCommand command, String commandString, ArgsParser args) {
         if (args.remaining() != 1) {
             return false;
         }
@@ -39,7 +33,7 @@ public class AccountSetPasswordCommand extends SubCommand {
     }
 
     @Override
-    public Collection<String> onTabComplete(ServerCommand command, ArgsParser args) {
+    public Collection<String> onTabComplete(GlobalServer server, ServerCommand command, ArgsParser args) {
         if (args.remaining() == 1) {
             ArrayList<String> result = new ArrayList<>();
             for (ClientConfig e : server.getAccounts()) {
