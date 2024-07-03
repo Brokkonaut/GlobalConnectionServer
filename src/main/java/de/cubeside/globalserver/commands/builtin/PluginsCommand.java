@@ -1,7 +1,7 @@
 package de.cubeside.globalserver.commands.builtin;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.AbstractServerCommand;
+import de.cubeside.globalserver.commands.AbstractServerCommand;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
