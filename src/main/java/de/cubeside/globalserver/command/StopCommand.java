@@ -1,10 +1,10 @@
 package de.cubeside.globalserver.command;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.AbstractServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 
-public class StopCommand extends ServerCommand {
+public class StopCommand extends AbstractServerCommand {
     public StopCommand() {
         super("stop");
     }

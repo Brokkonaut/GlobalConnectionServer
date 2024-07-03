@@ -1,12 +1,12 @@
 package de.cubeside.globalserver.command;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.AbstractServerCommand;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 
-public class PluginsCommand extends ServerCommand {
+public class PluginsCommand extends AbstractServerCommand {
     public PluginsCommand() {
         super("plugins");
     }

@@ -1,11 +1,12 @@
 package de.cubeside.globalserver.command;
 
+import de.cubeside.globalserver.AbstractServerCommand;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.ServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.Collection;
 
-public class HelpCommand extends ServerCommand {
+public class HelpCommand extends AbstractServerCommand {
     public HelpCommand() {
         super("help");
     }

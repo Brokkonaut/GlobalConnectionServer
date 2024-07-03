@@ -3,11 +3,11 @@ package de.cubeside.globalserver.command;
 import de.cubeside.globalserver.ClientConnection;
 import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.OnlinePlayer;
-import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.AbstractServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.List;
 
-public class ListCommand extends ServerCommand {
+public class ListCommand extends AbstractServerCommand {
     public ListCommand() {
         super("list");
     }

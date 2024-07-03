@@ -2,13 +2,13 @@ package de.cubeside.globalserver.command;
 
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.AbstractServerCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class AccountSetRestrictedCommand extends ServerCommand {
+public class AccountSetRestrictedCommand extends AbstractServerCommand {
     public AccountSetRestrictedCommand() {
         super("accountsetrestricted");
     }
