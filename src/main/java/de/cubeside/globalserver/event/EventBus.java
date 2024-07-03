@@ -15,6 +15,7 @@ public class EventBus {
     }
 
     public <E extends Event> boolean dispatchEvent(E event) {
+        @SuppressWarnings("unchecked")
         ClassEventHandlerList<E> list = (ClassEventHandlerList<E>) getEventHandlerList(event.getClass());
         AbstractEventHandler<? super E>[] handler = list.getEventHandlers();
         int l = handler.length;
@@ -28,6 +29,7 @@ public class EventBus {
         return l > 0;
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Event> ClassEventHandlerList<T> getEventHandlerList(Class<T> eventClass) {
         ClassEventHandlerList<?> list = eventHandlerLists.get(eventClass);
         if (list != null) {
@@ -42,6 +44,7 @@ public class EventBus {
 
         Class<? super T> superclass = eventClass.getSuperclass();
         if (superclass != null && Event.class.isAssignableFrom(superclass)) {
+            @SuppressWarnings("unchecked")
             ClassEventHandlerList<? super T> superlist = (ClassEventHandlerList<? super T>) getEventHandlerList((Class<? extends Event>) superclass);
             superlist.addSubclass(list);
             // the superclasses handlers will accept those new subclass events
@@ -56,6 +59,7 @@ public class EventBus {
         getEventHandlerList(handler.getEventClass()).registerHandler(handler);
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Event> void registerHandlers(Listener listener) {
         for (Method m : listener.getClass().getDeclaredMethods()) {
             EventHandler eventHandlerAnnotation = m.getAnnotation(EventHandler.class);
@@ -76,6 +80,7 @@ public class EventBus {
         getEventHandlerList(handler.getEventClass()).removeHandler(handler);
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Event> void removeHandlers(Listener listener) {
         for (Method m : listener.getClass().getDeclaredMethods()) {
             EventHandler eventHandlerAnnotation = m.getAnnotation(EventHandler.class);
