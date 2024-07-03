@@ -21,6 +21,7 @@ import de.cubeside.globalserver.event.globalserver.GlobalServerStoppedEvent;
 import de.cubeside.globalserver.event.globalserver.GlobalServerStoppingEvent;
 import de.cubeside.globalserver.event.player.PlayerJoinedEvent;
 import de.cubeside.globalserver.event.player.PlayerQuitEvent;
+import de.cubeside.globalserver.permissions.GlobalPermissions;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.cubeside.globalserver.plugin.PluginLoadException;
 import de.cubeside.globalserver.plugin.PluginManager;
@@ -114,6 +115,8 @@ public class GlobalServer {
 
     private final ExecutorService executor;
 
+    private final GlobalPermissions globalPermissions;
+
     public GlobalServer() throws PluginLoadException {
         console = new JLineConsole(this);
 
@@ -152,6 +155,7 @@ public class GlobalServer {
         connections = new ArrayList<>();
         connectionsByAccount = new HashMap<>();
         commands = new ConcurrentHashMap<>();
+        globalPermissions = new GlobalPermissions(this);
 
         addCommand(new HelpCommand());
         addCommand(new StopCommand());
