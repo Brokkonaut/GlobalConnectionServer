@@ -1,29 +1,37 @@
-package de.cubeside.globalserver.command;
+package de.cubeside.globalserver.commands.builtin.account;
 
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.AbstractServerCommand;
+import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.security.SecureRandom;
 
-public class CreateAccountCommand extends AbstractServerCommand {
-    public CreateAccountCommand() {
-        super("createaccount");
+public class AccountCreateCommand extends SubCommand {
+    private GlobalServer server;
+
+    public AccountCreateCommand(GlobalServer server) {
+        this.server = server;
     }
 
     @Override
-    public void execute(GlobalServer server, ArgsParser args) {
+    public String getUsage() {
+        return "<account>";
+    }
+
+    @Override
+    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
         if (args.remaining() != 1) {
-            GlobalServer.LOGGER.info("/createaccount <name>");
-            return;
+            return false;
         }
         String accountName = args.getNext().toLowerCase().trim();
         if (server.getAccount(accountName) != null) {
             GlobalServer.LOGGER.info("Account " + accountName + " already exists!");
-            return;
+            return true;
         }
         String password = createRandomPassword(32);
         server.addAccount(accountName, password);
         GlobalServer.LOGGER.info("Account " + accountName + " created with password: " + password);
+        return true;
     }
 
     public static String createRandomPassword(int length) {

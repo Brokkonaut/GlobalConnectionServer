@@ -1,4 +1,4 @@
-package de.cubeside.globalserver.command;
+package de.cubeside.globalserver.commands.builtin;
 
 import de.cubeside.globalserver.ClientConnection;
 import de.cubeside.globalserver.GlobalServer;

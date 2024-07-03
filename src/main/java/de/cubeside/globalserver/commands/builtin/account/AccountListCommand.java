@@ -1,18 +1,21 @@
-package de.cubeside.globalserver.command;
+package de.cubeside.globalserver.commands.builtin.account;
 
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.AbstractServerCommand;
+import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 
-public class AccountsCommand extends AbstractServerCommand {
-    public AccountsCommand() {
-        super("accounts");
+public class AccountListCommand extends SubCommand {
+    private GlobalServer server;
+
+    public AccountListCommand(GlobalServer server) {
+        this.server = server;
     }
 
     @Override
-    public void execute(GlobalServer server, ArgsParser args) {
+    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
         StringBuilder sb = new StringBuilder();
         ArrayList<ClientConfig> accounts = new ArrayList<>(server.getAccounts());
         accounts.sort((a1, a2) -> a1.getLogin().compareTo(a2.getLogin()));
@@ -29,5 +32,6 @@ public class AccountsCommand extends AbstractServerCommand {
             }
         }
         GlobalServer.LOGGER.info(sb.toString());
+        return true;
     }
 }

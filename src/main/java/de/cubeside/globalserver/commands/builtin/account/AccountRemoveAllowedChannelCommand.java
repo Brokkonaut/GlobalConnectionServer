@@ -1,45 +1,53 @@
-package de.cubeside.globalserver.command;
+package de.cubeside.globalserver.commands.builtin.account;
 
 import de.cubeside.globalserver.ClientConfig;
 import de.cubeside.globalserver.GlobalServer;
-import de.cubeside.globalserver.AbstractServerCommand;
+import de.cubeside.globalserver.ServerCommand;
+import de.cubeside.globalserver.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AccountRemoveAllowedChannelCommand extends AbstractServerCommand {
-    public AccountRemoveAllowedChannelCommand() {
-        super("accountremoveallowedchannel");
+public class AccountRemoveAllowedChannelCommand extends SubCommand {
+    private GlobalServer server;
+
+    public AccountRemoveAllowedChannelCommand(GlobalServer server) {
+        this.server = server;
     }
 
     @Override
-    public void execute(GlobalServer server, ArgsParser args) {
+    public String getUsage() {
+        return "<account> <channel>";
+    }
+
+    @Override
+    public boolean onCommand(ServerCommand command, String commandString, ArgsParser args) {
         if (args.remaining() != 2) {
-            GlobalServer.LOGGER.info("/accountremoveallowedchannel <name> <channel>");
-            return;
+            return false;
         }
         String accountName = args.getNext().toLowerCase().trim();
         String channel = args.getNext();
         ClientConfig account = server.getAccount(accountName);
         if (account == null) {
             GlobalServer.LOGGER.info("Account " + accountName + " does not exist!");
-            return;
+            return true;
         }
         account.getAllowedChannels().remove(channel);
         server.saveConfig();
         GlobalServer.LOGGER.info("Channel " + channel + " is no longer allowed for account " + accountName);
+        return true;
     }
 
     @Override
-    public Collection<String> tabComplete(GlobalServer server, ArgsParser argsParser) {
-        if (argsParser.remaining() == 1) {
+    public Collection<String> onTabComplete(ServerCommand command, ArgsParser args) {
+        if (args.remaining() == 1) {
             ArrayList<String> result = new ArrayList<>();
             for (ClientConfig e : server.getAccounts()) {
                 result.add(e.getLogin());
             }
             return result;
-        } else if (argsParser.remaining() == 2) {
-            ClientConfig account = server.getAccount(argsParser.getNext());
+        } else if (args.remaining() == 2) {
+            ClientConfig account = server.getAccount(args.getNext());
             if (account != null) {
                 return account.getAllowedChannels();
             }

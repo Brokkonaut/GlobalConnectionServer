@@ -1,17 +1,11 @@
 package de.cubeside.globalserver;
 
-import de.cubeside.globalserver.command.AccountAddAllowedChannelCommand;
-import de.cubeside.globalserver.command.AccountInfoCommand;
-import de.cubeside.globalserver.command.AccountRemoveAllowedChannelCommand;
-import de.cubeside.globalserver.command.AccountSetPasswordCommand;
-import de.cubeside.globalserver.command.AccountSetRestrictedCommand;
-import de.cubeside.globalserver.command.AccountsCommand;
-import de.cubeside.globalserver.command.CreateAccountCommand;
-import de.cubeside.globalserver.command.HelpCommand;
-import de.cubeside.globalserver.command.ListCommand;
-import de.cubeside.globalserver.command.PluginsCommand;
-import de.cubeside.globalserver.command.ServersCommand;
-import de.cubeside.globalserver.command.StopCommand;
+import de.cubeside.globalserver.commands.builtin.HelpCommand;
+import de.cubeside.globalserver.commands.builtin.ListCommand;
+import de.cubeside.globalserver.commands.builtin.PluginsCommand;
+import de.cubeside.globalserver.commands.builtin.ServersCommand;
+import de.cubeside.globalserver.commands.builtin.StopCommand;
+import de.cubeside.globalserver.commands.builtin.account.AccountCommand;
 import de.cubeside.globalserver.event.EventBus;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionDissolveEvent;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionEstablishedEvent;
@@ -161,15 +155,8 @@ public class GlobalServer {
         addCommand(new StopCommand());
         addCommand(new ServersCommand());
         addCommand(new ListCommand());
-        addCommand(new AccountsCommand());
-        addCommand(new AccountInfoCommand());
-        addCommand(new CreateAccountCommand());
-        addCommand(new AccountSetPasswordCommand());
-        addCommand(new AccountSetRestrictedCommand());
-        addCommand(new AccountAddAllowedChannelCommand());
-        addCommand(new AccountRemoveAllowedChannelCommand());
+        addCommand(new AccountCommand(this));
         addCommand(new PluginsCommand());
-        addCommand("pl", new PluginsCommand());
 
         this.pluginFolder = new File("./plugins");
         pluginFolder.mkdirs();
@@ -206,7 +193,7 @@ public class GlobalServer {
         addCommand(command.getCommand(), command);
     }
 
-    public void addCommand(String commandString, ServerCommand command) {
+    void addCommand(String commandString, ServerCommand command) {
         commands.put(commandString.toLowerCase().trim(), command);
     }
 

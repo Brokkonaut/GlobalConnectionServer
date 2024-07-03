@@ -16,4 +16,9 @@ public abstract class SubCommand implements PermissionRequirer {
     public String getUsage() {
         return "";
     }
+
+    @Override
+    public String getRequiredPermission() {
+        return null;
+    }
 }
