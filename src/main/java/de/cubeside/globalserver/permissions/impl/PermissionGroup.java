@@ -19,6 +19,7 @@ public class PermissionGroup {
     private boolean haveToRecalculatePermissions;
 
     volatile HashMap<String, Boolean> resolvedPermissions = new HashMap<>();
+    private Integer editorPriority;
 
     public PermissionGroup(PermissionSystem permissionSystem, String name) {
         // this.permissionSystem = permissionSystem;
@@ -45,7 +46,7 @@ public class PermissionGroup {
         }
         // already checked
         if (editorDirectDependencies != null) {
-            return haveToRecalculatePermissions;
+            return haveToRecalculatePermissions || editorPriority != null;
         }
         // no changes
         if (editorDirectPermissions == null && hasNoNewOrRemovedGroups) {
@@ -60,7 +61,7 @@ public class PermissionGroup {
             if (groupStack.removeLast() != this) {
                 throw new IllegalStateException("broken group stack");
             }
-            return haveToRecalculatePermissions;
+            return haveToRecalculatePermissions || editorPriority != null;
         }
         // possible changes, so recalculate all direct dependencies
         if (editorDirectPermissions != null) {
@@ -79,10 +80,14 @@ public class PermissionGroup {
         if (groupStack.removeLast() != this) {
             throw new IllegalStateException("broken group stack");
         }
-        return haveToRecalculatePermissions;
+        return haveToRecalculatePermissions || editorPriority != null;
     }
 
     void commitPermissionUpdates(HashMap<String, PermissionGroup> editorGroups) {
+        if (editorPriority != null) {
+            priority = editorPriority;
+            editorPriority = null;
+        }
         if (editorDirectPermissions != null) {
             directPermissions.clear();
             directPermissions.putAll(editorDirectPermissions);
@@ -160,6 +165,7 @@ public class PermissionGroup {
     void cancelPermissionUpdates() {
         editorDirectPermissions = null;
         editorDirectDependencies = null;
+        editorPriority = null;
         haveToRecalculatePermissions = false;
     }
 
@@ -176,6 +182,6 @@ public class PermissionGroup {
     }
 
     void setPriority(int priority) {
-        this.priority = priority;
+        this.editorPriority = priority;
     }
 }

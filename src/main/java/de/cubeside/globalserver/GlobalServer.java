@@ -7,6 +7,7 @@ import de.cubeside.globalserver.commands.builtin.PluginsCommand;
 import de.cubeside.globalserver.commands.builtin.ServersCommand;
 import de.cubeside.globalserver.commands.builtin.StopCommand;
 import de.cubeside.globalserver.commands.builtin.account.AccountCommand;
+import de.cubeside.globalserver.commands.builtin.permissions.PermissionGroupCommand;
 import de.cubeside.globalserver.event.EventBus;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionDissolveEvent;
 import de.cubeside.globalserver.event.clientconnection.ClientConnectionEstablishedEvent;
@@ -160,8 +161,9 @@ public class GlobalServer {
         addCommand(new StopCommand());
         addCommand(new ServersCommand());
         addCommand(new ListCommand());
-        addCommand(new AccountCommand(this));
         addCommand(new PluginsCommand());
+        addCommand(new AccountCommand());
+        addCommand(new PermissionGroupCommand());
 
         this.pluginFolder = new File("./plugins");
         pluginFolder.mkdirs();

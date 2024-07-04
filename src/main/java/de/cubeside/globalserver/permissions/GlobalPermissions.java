@@ -12,6 +12,10 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,10 +48,13 @@ public class GlobalPermissions {
         constructor.addTypeDescription(goupPermissionsDescription);
         configYaml = new Yaml(constructor);
 
+        reload();
+    }
+
+    public synchronized void reload() {
         if (groupsFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(groupsFile), Charset.forName("UTF-8")))) {
                 groupsConfig = configYaml.loadAs(reader, GroupsConfig.class);
-                saveConfig();
             } catch (Exception e) {
                 LOGGER.error("Could not parse permission groups config!", e);
             }
@@ -75,18 +82,132 @@ public class GlobalPermissions {
                     }
                 }
             });
-            LOGGER.info("Permissions loaded!");
+            LOGGER.info("Permissions reloaded!");
         } catch (CircularDependenciesException e) {
-            LOGGER.error("Could not update permission groups because of circular dependencies!", e.getMessage());
+            LOGGER.error("Could not load permission groups because of circular dependencies: " + e.getMessage());
+            try {
+                permissionSystem.editGroups(editor -> {
+                    editor.removeAllGroups();
+                });
+            } catch (CircularDependenciesException e1) {
+                throw new RuntimeException("should be impossible");
+            }
         }
     }
 
-    public void saveConfig() {
+    public synchronized void saveConfig() {
         String output = configYaml.dumpAsMap(groupsConfig);
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(groupsFile), Charset.forName("UTF-8")))) {
             writer.write(output);
         } catch (Exception e) {
             LOGGER.error("Could not save config!", e);
         }
+    }
+
+    public synchronized Collection<String> getAllGroups() {
+        return new ArrayList<>(groupsConfig.getGroups().keySet());
+    }
+
+    public synchronized boolean hasGroup(String groupName) {
+        return groupsConfig.getGroups().containsKey(groupName);
+    }
+
+    public synchronized boolean addGroup(String groupName) {
+        if (hasGroup(groupName)) {
+            return false;
+        }
+        try {
+            permissionSystem.editGroups(editor -> {
+                editor.createGroup(groupName);
+            });
+            groupsConfig.getGroups().put(groupName, new GroupPermissions());
+            saveConfig();
+        } catch (CircularDependenciesException e) {
+            LOGGER.error("Could not update permission groups because of circular dependencies: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized int getGroupPriority(String groupName) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        return perms == null ? 0 : perms.getPriority();
+    }
+
+    public synchronized Map<String, Boolean> getGroupPermissions(String groupName) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        return perms == null ? Map.of() : Collections.unmodifiableMap(perms.getPermissions());
+    }
+
+    public synchronized boolean setGroupPriority(String groupName, int prio) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        if (perms == null) {
+            return false;
+        }
+        try {
+            permissionSystem.editGroups(editor -> {
+                editor.setGroupPriority(groupName, prio);
+            });
+            perms.setPriority(prio);
+            saveConfig();
+        } catch (CircularDependenciesException e) {
+            LOGGER.error("Could not update permission groups because of circular dependencies: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized boolean addGroupPermission(String groupName, String permission, boolean value) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        if (perms == null) {
+            return false;
+        }
+        try {
+            permissionSystem.editGroups(editor -> {
+                editor.addPermissionToGroup(groupName, permission, value);
+            });
+            perms.getPermissions().put(permission, value);
+            saveConfig();
+        } catch (CircularDependenciesException e) {
+            LOGGER.error("Could not update permission groups because of circular dependencies: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized boolean removeGroupPermission(String groupName, String permission) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        if (perms == null) {
+            return false;
+        }
+        try {
+            permissionSystem.editGroups(editor -> {
+                editor.removePermissionFromGroup(groupName, permission);
+            });
+            perms.getPermissions().remove(permission);
+            saveConfig();
+        } catch (CircularDependenciesException e) {
+            LOGGER.error("Could not update permission groups because of circular dependencies: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized boolean removeGroup(String groupName) {
+        GroupPermissions perms = groupsConfig.getGroups().get(groupName);
+        if (perms == null) {
+            return false;
+        }
+        try {
+            permissionSystem.editGroups(editor -> {
+                editor.removeGroup(groupName);
+            });
+            groupsConfig.getGroups().remove(groupName);
+            saveConfig();
+        } catch (CircularDependenciesException e) {
+            LOGGER.error("Could not update permission groups because of circular dependencies: " + e.getMessage());
+            return false;
+        }
+        return true;
     }
 }
