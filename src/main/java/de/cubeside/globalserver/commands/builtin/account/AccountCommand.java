@@ -1,14 +1,14 @@
 package de.cubeside.globalserver.commands.builtin.account;
 
-import de.cubeside.globalserver.GlobalServer;
 import de.cubeside.globalserver.commands.CommandRouterCommand;
 
 public class AccountCommand extends CommandRouterCommand {
-    public AccountCommand(GlobalServer server) {
+    public AccountCommand() {
         super("account");
         addCommandMapping(new AccountListCommand(), "list");
         addCommandMapping(new AccountInfoCommand(), "info");
         addCommandMapping(new AccountCreateCommand(), "create");
+        addCommandMapping(new AccountDeleteCommand(), "delete");
         addCommandMapping(new AccountSetPasswordCommand(), "setpassword");
         addCommandMapping(new AccountSetRestrictedCommand(), "setrestriced");
         addCommandMapping(new AccountAddAllowedChannelCommand(), "addallowedchannel");
