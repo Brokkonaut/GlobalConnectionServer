@@ -15,5 +15,6 @@ public class AccountCommand extends CommandRouterCommand {
         addCommandMapping(new AccountRemoveAllowedChannelCommand(), "removeallowedchannel");
         addCommandMapping(new AccountAddGroupCommand(), "addgroup");
         addCommandMapping(new AccountRemoveGroupCommand(), "removegroup");
+        addCommandMapping(new AccountTestPermissionCommand(), "testpermission");
     }
 }

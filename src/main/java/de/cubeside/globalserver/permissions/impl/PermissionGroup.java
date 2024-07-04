@@ -157,6 +157,7 @@ public class PermissionGroup {
                 Boolean permissionValue = e.getValue();
                 resultingRermissions.put(permission, permissionValue);
             }
+            resultingRermissions.put(name, true); // this group
             resolvedPermissions = resultingRermissions;
         }
         haveToRecalculatePermissions = false;
