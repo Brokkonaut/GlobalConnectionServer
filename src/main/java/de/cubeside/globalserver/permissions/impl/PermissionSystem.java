@@ -78,8 +78,8 @@ public class PermissionSystem {
             user.removeEditorPermission(permission);
         }
 
-        public void removeAllPermissions(String permission) {
-            user.removeEditorAllPermissions(permission);
+        public void removeAllPermissions() {
+            user.removeEditorAllPermissions();
         }
     }
 

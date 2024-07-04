@@ -30,7 +30,7 @@ public class PermissionUser {
         directEditorPermissions.remove(permission);
     }
 
-    void removeEditorAllPermissions(String permission) {
+    void removeEditorAllPermissions() {
         if (directEditorPermissions == null) {
             directEditorPermissions = new HashMap<>();
         } else {

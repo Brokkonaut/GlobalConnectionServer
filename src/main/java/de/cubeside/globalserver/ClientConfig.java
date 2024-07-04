@@ -12,6 +12,7 @@ public class ClientConfig {
     private String password;
     private boolean restricted;
     private Set<String> allowedChannels;
+    private Set<String> groups;
 
     public ClientConfig() {
     }
@@ -21,6 +22,7 @@ public class ClientConfig {
         this.password = password;
         this.restricted = restricted;
         this.allowedChannels = allowedChannels == null ? new HashSet<>() : new HashSet<>(allowedChannels);
+        this.groups = new HashSet<>();
     }
 
     public String getLogin() {
@@ -53,6 +55,17 @@ public class ClientConfig {
 
     public void setAllowedChannels(Set<String> allowedChannels) {
         this.allowedChannels = allowedChannels == null ? new HashSet<>() : new HashSet<>(allowedChannels);
+    }
+
+    public Set<String> getGroups() {
+        if (groups == null) {
+            groups = new HashSet<>();
+        }
+        return groups;
+    }
+
+    public void setGroups(Set<String> groups) {
+        this.groups = groups;
     }
 
     public boolean checkPassword(byte[] password, byte[] saltServer, byte[] saltClient) {

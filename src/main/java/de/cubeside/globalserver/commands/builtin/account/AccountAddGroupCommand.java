@@ -8,48 +8,28 @@ import de.iani.cubesideutils.commands.ArgsParser;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AccountInfoCommand extends SubCommand {
+public class AccountAddGroupCommand extends SubCommand {
     @Override
     public String getUsage() {
-        return "<account>";
+        return "<account> <group>";
     }
 
     @Override
     public boolean onCommand(GlobalServer server, ServerCommand command, String commandString, ArgsParser args) {
-        if (args.remaining() != 1) {
+        if (args.remaining() != 2) {
             return false;
         }
         String accountName = args.getNext().toLowerCase().trim();
+        String group = args.getNext();
         ClientConfig account = server.getAccount(accountName);
         if (account == null) {
             GlobalServer.LOGGER.info("Account " + accountName + " does not exist!");
             return true;
         }
-        String s = "Account " + account.getLogin();
-        GlobalServer.LOGGER.info(s);
-        StringBuilder sb = new StringBuilder();
-        for (int i = s.length(); i > 0; i--) {
-            sb.append("=");
-        }
-        GlobalServer.LOGGER.info(sb.toString());
-        GlobalServer.LOGGER.info("  Password: " + account.getPassword());
-        GlobalServer.LOGGER.info("  Restricted: " + account.isRestricted());
-        if (account.isRestricted()) {
-            GlobalServer.LOGGER.info("  Allowed Channels:");
-            for (String s2 : account.getAllowedChannels()) {
-                GlobalServer.LOGGER.info("    " + s2);
-            }
-            if (account.getAllowedChannels().isEmpty()) {
-                GlobalServer.LOGGER.info("    " + "(none)");
-            }
-        }
-        GlobalServer.LOGGER.info("  Groups:");
-        for (String s2 : account.getGroups()) {
-            GlobalServer.LOGGER.info("    " + s2);
-        }
-        if (account.getGroups().isEmpty()) {
-            GlobalServer.LOGGER.info("    " + "(none)");
-        }
+        account.getGroups().add(group);
+        server.saveConfig();
+        GlobalServer.LOGGER.info("Account " + accountName + " has now group " + group + ".");
+        server.reloadGroupsForAccount(accountName);
         return true;
     }
 

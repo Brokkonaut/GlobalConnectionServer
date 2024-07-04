@@ -18,6 +18,7 @@ import de.cubeside.globalserver.event.globalserver.GlobalServerStoppingEvent;
 import de.cubeside.globalserver.event.player.PlayerJoinedEvent;
 import de.cubeside.globalserver.event.player.PlayerQuitEvent;
 import de.cubeside.globalserver.permissions.GlobalPermissions;
+import de.cubeside.globalserver.permissions.impl.PermissionUser;
 import de.cubeside.globalserver.plugin.Plugin;
 import de.cubeside.globalserver.plugin.PluginLoadException;
 import de.cubeside.globalserver.plugin.PluginManager;
@@ -130,6 +131,9 @@ public class GlobalServer {
         TypeDescription serverConfigDescription = new TypeDescription(ServerConfig.class);
         serverConfigDescription.addPropertyParameters("clientConfigs", ClientConfig.class);
         constructor.addTypeDescription(serverConfigDescription);
+        TypeDescription clientConfigDescription = new TypeDescription(ClientConfig.class);
+        clientConfigDescription.addPropertyParameters("allowedChannels", String.class);
+        constructor.addTypeDescription(clientConfigDescription);
         configYaml = new Yaml(constructor);
 
         if (configFile.exists()) {
@@ -428,16 +432,18 @@ public class GlobalServer {
             boolean wasOnline = connections.remove(connection);
             pendingConnections.remove(connection);
             if (wasOnline) {
-                connectionsByAccount.remove(connection.getAccount());
+                String account = connection.getAccount();
+                connectionsByAccount.remove(account);
                 for (ClientConnection cc : connections) {
                     if (cc != connection) {
-                        cc.sendServerOffline(connection.getAccount());
+                        cc.sendServerOffline(account);
                     }
                 }
                 for (OnlinePlayer player : connection.getPlayers()) {
                     getEventBus().dispatchEvent(new PlayerQuitEvent(connection, player));
                 }
                 getEventBus().dispatchEvent(new ClientConnectionDissolveEvent(connection));
+                globalPermissions.getPermissionSystem().unloadUser(account);
             }
         } finally {
             writeLock.unlock();
@@ -469,6 +475,10 @@ public class GlobalServer {
             pendingConnections.remove(connection);
             connections.add(connection);
             connectionsByAccount.put(connection.getAccount(), connection);
+
+            // perms
+            reloadGroupsForAccount(account);
+
             connection.sendLoginResultAndActivateEncryption(true, config);
             // send online servers
             for (ClientConnection cc : connections) {
@@ -594,5 +604,24 @@ public class GlobalServer {
 
     public GlobalPermissions getGlobalPermissions() {
         return globalPermissions;
+    }
+
+    public void reloadGroupsForAccount(String accountName) {
+        readLock.lock();
+        try {
+            ClientConnection connection = getConnection(accountName);
+            if (connection != null && connection.getClient() != null) {
+                ArrayList<String> groups = new ArrayList<>(connection.getClient().getGroups());
+                PermissionUser user = globalPermissions.getPermissionSystem().createOrEditUser(accountName, editor -> {
+                    editor.removeAllPermissions();
+                    for (String group : groups) {
+                        editor.addPermissionToUser("group." + group, true);
+                    }
+                });
+                connection.setPermissions(user);
+            }
+        } finally {
+            readLock.unlock();
+        }
     }
 }

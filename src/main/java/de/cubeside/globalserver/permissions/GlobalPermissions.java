@@ -210,4 +210,8 @@ public class GlobalPermissions {
         }
         return true;
     }
+
+    public PermissionSystem getPermissionSystem() {
+        return permissionSystem;
+    }
 }

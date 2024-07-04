@@ -1,5 +1,6 @@
 package de.cubeside.globalserver;
 
+import de.cubeside.globalserver.permissions.impl.PermissionUser;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -45,6 +46,8 @@ public class ClientConnection extends Thread {
     private ClientConfig client;
     private HashMap<UUID, OnlinePlayer> playersOnline;
     private final Object sendSync = new Object();
+
+    private PermissionUser permissions;
 
     public ClientConnection(GlobalServer server, Socket socket) {
         this.server = server;
@@ -400,5 +403,14 @@ public class ClientConnection extends Thread {
 
     public OnlinePlayer getPlayer(UUID uuid) {
         return playersOnline.get(uuid);
+    }
+
+    public void setPermissions(PermissionUser permissions) {
+        this.permissions = permissions;
+    }
+
+    public boolean hasPermission(String permission) {
+        PermissionUser permissions = this.permissions;
+        return permissions != null && permissions.hasPermission(permission);
     }
 }
