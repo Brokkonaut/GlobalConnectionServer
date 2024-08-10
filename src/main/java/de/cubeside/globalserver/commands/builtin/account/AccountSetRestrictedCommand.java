@@ -21,7 +21,10 @@ public class AccountSetRestrictedCommand extends SubCommand {
             return false;
         }
         String accountName = args.getNext().toLowerCase().trim();
-        boolean restricted = args.getNext(false);
+        Boolean restricted = args.getNext(false);
+        if (restricted == null) {
+            return false;
+        }
         ClientConfig account = server.getAccount(accountName);
         if (account == null) {
             GlobalServer.LOGGER.info("Account " + accountName + " does not exist!");
